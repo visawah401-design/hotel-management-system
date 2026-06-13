@@ -25,6 +25,6 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Keep the data directory and local-db.json
-!server/data/
-!server/data/local-db.json
+# local database files (using MongoDB Atlas now)
+server/data/
+
