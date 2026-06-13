@@ -1,0 +1,109 @@
+.rooms-page {
+  padding: 2rem 0;
+}
+
+.rooms-page h1 {
+  text-align: center;
+  color: #d4af37;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  text-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
+}
+
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #2a2a2a;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+  border: 2px solid #d4af37;
+}
+
+.modal h2 {
+  color: #d4af37;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #d4af37;
+  font-weight: bold;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d4af37;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn-confirm, .btn-cancel {
+  flex: 1;
+  padding: 0.8rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, #d4af37 0%, #f0e68c 100%);
+  color: #1a1a1a;
+}
+
+.btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+}
+
+.btn-cancel {
+  background: #3a3a3a;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+}
+
+.btn-cancel:hover {
+  background: #d4af37;
+  color: #1a1a1a;
+}
+
+@media (max-width: 768px) {
+  .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+}

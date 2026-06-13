@@ -1,0 +1,107 @@
+.room-card {
+  background: #2a2a2a;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+  transition: transform 0.3s, box-shadow 0.3s, border 0.3s;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid transparent;
+}
+
+.room-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+  border: 2px solid #d4af37;
+}
+
+.room-image {
+  background: linear-gradient(135deg, #d4af37 0%, #f0e68c 100%);
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #1a1a1a;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.room-info {
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.room-info h3 {
+  color: #d4af37;
+  margin-bottom: 0.5rem;
+}
+
+.capacity, .price {
+  color: #b0b0b0;
+  margin: 0.3rem 0;
+  font-size: 0.95rem;
+}
+
+.price {
+  color: #f0e68c;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+}
+
+.amenities span {
+  background: #3a3a3a;
+  color: #d4af37;
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+}
+
+.description {
+  color: #888;
+  font-size: 0.9rem;
+  flex: 1;
+  margin-bottom: 1rem;
+}
+
+.btn-book {
+  background: linear-gradient(135deg, #d4af37 0%, #f0e68c 100%);
+  color: #1a1a1a;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.btn-book:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+}
+
+.btn-book:disabled {
+  background: #5a5a5a;
+  color: #b0b0b0;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .room-image {
+    height: 120px;
+    font-size: 1.45rem;
+  }
+
+  .room-info {
+    padding: 1rem;
+  }
+}

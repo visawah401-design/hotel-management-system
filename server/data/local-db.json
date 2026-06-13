@@ -1,0 +1,160 @@
+{
+  "users": [],
+  "rooms": [
+    {
+      "_id": "room-single-101",
+      "id": "room-single-101",
+      "roomNumber": "101",
+      "roomType": "Single",
+      "capacity": 1,
+      "pricePerNight": 1800,
+      "status": "Occupied",
+      "amenities": [
+        "WiFi",
+        "AC",
+        "TV"
+      ],
+      "description": "Comfortable single room for solo guests.",
+      "images": [],
+      "floor": 1,
+      "createdAt": "2026-05-28T20:43:23.679Z",
+      "updatedAt": "2026-06-13T15:03:06.847Z"
+    },
+    {
+      "_id": "room-double-204",
+      "id": "room-double-204",
+      "roomNumber": "204",
+      "roomType": "Double",
+      "capacity": 2,
+      "pricePerNight": 2800,
+      "status": "Occupied",
+      "amenities": [
+        "WiFi",
+        "AC",
+        "TV",
+        "Balcony"
+      ],
+      "description": "Spacious double room with balcony.",
+      "images": [],
+      "floor": 2,
+      "createdAt": "2026-05-28T20:43:23.680Z",
+      "updatedAt": "2026-05-29T11:52:53.019Z"
+    },
+    {
+      "_id": "room-suite-301",
+      "id": "room-suite-301",
+      "roomNumber": "301",
+      "roomType": "Suite",
+      "capacity": 4,
+      "pricePerNight": 5200,
+      "status": "Occupied",
+      "amenities": [
+        "WiFi",
+        "AC",
+        "TV",
+        "Mini Bar",
+        "Jacuzzi"
+      ],
+      "description": "Premium suite for family stays.",
+      "images": [],
+      "floor": 3,
+      "createdAt": "2026-05-28T20:43:23.680Z",
+      "updatedAt": "2026-05-29T12:59:34.817Z"
+    }
+  ],
+  "bookings": [
+    {
+      "status": "Pending",
+      "bookingId": "BOOK1780055572977",
+      "userId": "guest_user",
+      "roomId": "room-double-204",
+      "checkInDate": "2026-05-29",
+      "checkOutDate": "2026-05-29",
+      "numberOfGuests": 1,
+      "totalPrice": 0,
+      "_id": "8b157916-6b6f-49f7-947d-f428f53df52b",
+      "id": "8b157916-6b6f-49f7-947d-f428f53df52b",
+      "createdAt": "2026-05-29T11:52:53.013Z",
+      "updatedAt": "2026-05-29T11:52:53.013Z"
+    },
+    {
+      "status": "Pending",
+      "bookingId": "BOOK1780057005750",
+      "userId": "guest_user",
+      "roomId": "room-single-101",
+      "checkInDate": "2026-05-29",
+      "checkOutDate": "2026-05-29",
+      "numberOfGuests": 1,
+      "totalPrice": 0,
+      "_id": "9511c458-5163-4f55-bbfc-43aaba2dbe55",
+      "id": "9511c458-5163-4f55-bbfc-43aaba2dbe55",
+      "createdAt": "2026-05-29T12:16:45.750Z",
+      "updatedAt": "2026-05-29T12:16:45.750Z"
+    },
+    {
+      "status": "Pending",
+      "bookingId": "BOOK1780059574815",
+      "userId": "guest_user",
+      "roomId": "room-suite-301",
+      "checkInDate": "2026-05-08",
+      "checkOutDate": "2026-05-30",
+      "numberOfGuests": 1,
+      "totalPrice": 114400,
+      "_id": "18617133-7c1f-4fc7-a262-6f11c94caf2a",
+      "id": "18617133-7c1f-4fc7-a262-6f11c94caf2a",
+      "createdAt": "2026-05-29T12:59:34.815Z",
+      "updatedAt": "2026-05-29T12:59:34.815Z"
+    },
+    {
+      "status": "Pending",
+      "bookingId": "BOOK1781352943117",
+      "userId": "guest_user",
+      "roomId": "room-single-101",
+      "checkInDate": "2026-06-13T20:01",
+      "checkOutDate": "2026-06-13T21:01",
+      "numberOfGuests": 1,
+      "totalPrice": 1800,
+      "_id": "f40a293d-c04e-4518-8dd2-15743b644049",
+      "id": "f40a293d-c04e-4518-8dd2-15743b644049",
+      "createdAt": "2026-06-13T12:15:43.255Z",
+      "updatedAt": "2026-06-13T12:15:43.255Z"
+    },
+    {
+      "status": "Pending",
+      "bookingId": "BOOK1781362986826",
+      "userId": "guest_user",
+      "roomId": "room-single-101",
+      "checkInDate": "2026-06-13T22:32",
+      "checkOutDate": "2026-06-13T23:32",
+      "numberOfGuests": 1,
+      "totalPrice": 1800,
+      "_id": "6fa5c74d-3da6-4c6d-ab2c-3bc1985c8887",
+      "id": "6fa5c74d-3da6-4c6d-ab2c-3bc1985c8887",
+      "createdAt": "2026-06-13T15:03:06.827Z",
+      "updatedAt": "2026-06-13T15:03:06.827Z"
+    }
+  ],
+  "payments": [],
+  "facilities": [
+    {
+      "_id": "facility-wifi",
+      "id": "facility-wifi",
+      "name": "Free WiFi",
+      "description": "High speed internet across the hotel.",
+      "icon": "wifi",
+      "available": true,
+      "createdAt": "2026-05-28T20:43:23.680Z",
+      "updatedAt": "2026-05-28T20:43:23.680Z"
+    },
+    {
+      "_id": "facility-parking",
+      "id": "facility-parking",
+      "name": "Parking",
+      "description": "Secure parking for guests.",
+      "icon": "parking",
+      "available": true,
+      "createdAt": "2026-05-28T20:43:23.680Z",
+      "updatedAt": "2026-05-28T20:43:23.680Z"
+    }
+  ]
+}

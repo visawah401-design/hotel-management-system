@@ -1,0 +1,377 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #0f0f0f;
+}
+
+/* Navbar Styles */
+.navbar {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  padding: 0.75rem 0;
+  position: sticky;
+  top: 0;
+  box-shadow: 0 2px 20px rgba(212, 175, 55, 0.3);
+  z-index: 100;
+  border-bottom: 2px solid #d4af37;
+}
+
+.nav-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) auto minmax(230px, 1fr);
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #d4af37;
+  font-size: 0.95rem;
+  font-weight: bold;
+  text-decoration: none;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.logo img {
+  width: 54px;
+  height: 54px;
+  display: block;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  transform: scale(1.18);
+}
+
+.logo small {
+  display: block;
+  margin-top: 0.22rem;
+  color: rgba(236, 225, 192, 0.86);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-shadow: none;
+}
+
+.logo strong {
+  display: block;
+}
+
+.nav-menu {
+  display: flex;
+  list-style: none;
+  gap: 1.15rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-menu a {
+  color: #e0e0e0;
+  transition: all 0.3s;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav-menu a:hover {
+  color: #d4af37;
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.btn-login, .btn-register, .btn-logout {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.8rem;
+}
+
+.mobile-auth,
+.menu-toggle {
+  display: none;
+}
+
+.phone-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  border-radius: 999px;
+  color: #f4df92 !important;
+  background: rgba(212, 175, 55, 0.08);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.36);
+  animation: phonePulse 2.4s ease-in-out infinite;
+}
+
+.phone-pill::before {
+  content: "Call";
+  margin-right: 0.45rem;
+  color: #101010;
+  background: #d4af37;
+  padding: 0.18rem 0.42rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.phone-pill:hover {
+  color: #101010 !important;
+  background: #d4af37;
+  text-shadow: none;
+}
+
+@keyframes phonePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.34);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(212, 175, 55, 0);
+  }
+}
+
+.btn-login {
+  border: 2px solid #d4af37;
+  color: #d4af37;
+  background: transparent;
+}
+
+.btn-login:hover {
+  background: #d4af37;
+  color: #1a1a1a;
+}
+
+.btn-register {
+  background: #d4af37;
+  color: #1a1a1a;
+}
+
+.btn-register:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+}
+
+.btn-logout {
+  background: #ff6b6b;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+}
+
+.btn-logout:hover {
+  background: #ff5252;
+}
+
+/* Main Content */
+main {
+  flex: 1;
+  max-width: 1200px;
+  margin: 2rem auto;
+  width: 100%;
+  padding: 0 2rem;
+}
+
+/* Footer Styles */
+.footer {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  color: #e0e0e0;
+  text-align: center;
+  padding: 2rem;
+  margin-top: auto;
+  border-top: 2px solid #d4af37;
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-links {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.footer-links a {
+  color: #d4af37;
+  transition: all 0.3s;
+}
+
+.footer-links a:hover {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nav-container {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.8rem;
+  }
+
+  .logo {
+    font-size: 0.84rem;
+    line-height: 1.2;
+  }
+
+  .logo img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .logo small {
+    font-size: 0.66rem;
+  }
+
+  .nav-menu {
+    position: absolute;
+    top: calc(100% + 1rem);
+    left: 1rem;
+    right: 1rem;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+    padding: 0.9rem;
+    background: #1a1a1a;
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    border-radius: 8px;
+    box-shadow: 0 18px 32px rgba(0, 0, 0, 0.36);
+  }
+
+  .nav-menu.open {
+    display: flex;
+  }
+
+  .nav-menu li,
+  .nav-menu a,
+  .nav-menu button {
+    width: 100%;
+  }
+
+  .nav-menu a,
+  .nav-menu button {
+    justify-content: center;
+    padding: 0.75rem;
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .nav-menu a:hover {
+    background: rgba(212, 175, 55, 0.1);
+  }
+
+  .nav-actions {
+    gap: 0.55rem;
+  }
+
+  .nav-actions .btn-login,
+  .nav-actions .btn-logout {
+    display: none;
+  }
+
+  .mobile-auth {
+    display: block;
+  }
+
+  .phone-pill {
+    min-height: 36px;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .phone-pill::before {
+    display: none;
+  }
+
+  .menu-toggle {
+    width: 42px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    gap: 4px;
+    padding: 0.55rem;
+    border: 1px solid rgba(212, 175, 55, 0.55);
+    border-radius: 4px;
+    background: rgba(212, 175, 55, 0.08);
+    cursor: pointer;
+  }
+
+  .menu-toggle span {
+    width: 20px;
+    height: 2px;
+    display: block;
+    background: #d4af37;
+    border-radius: 999px;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  .menu-toggle.open span:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .menu-toggle.open span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .menu-toggle.open span:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  main {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-container {
+    padding: 0 0.8rem;
+  }
+
+  .logo {
+    gap: 0.45rem;
+    font-size: 0.66rem;
+  }
+
+  .logo img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .logo small {
+    font-size: 0.52rem;
+  }
+
+  .phone-pill {
+    font-size: 0;
+    width: 38px;
+    justify-content: center;
+  }
+
+  .phone-pill::after {
+    content: "Call";
+    color: #f4df92;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+}

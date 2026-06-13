@@ -1,0 +1,131 @@
+.bookings-page {
+  padding: 2rem 0;
+}
+
+.bookings-page h1 {
+  color: #d4af37;
+  margin-bottom: 2rem;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
+}
+
+.no-bookings {
+  text-align: center;
+  padding: 3rem;
+  background: #2a2a2a;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  color: #b0b0b0;
+}
+
+.bookings-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.booking-card {
+  background: #2a2a2a;
+  border-left: 4px solid #d4af37;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 15px rgba(212, 175, 55, 0.2);
+}
+
+.booking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #3a3a3a;
+  padding-bottom: 1rem;
+}
+
+.booking-header h3 {
+  color: #d4af37;
+}
+
+.status {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.status.pending {
+  background: #3a3a00;
+  color: #ffff99;
+}
+
+.status.confirmed {
+  background: #003a3a;
+  color: #99ffff;
+}
+
+.status.checked-in {
+  background: #003a00;
+  color: #99ff99;
+}
+
+.status.checked-out {
+  background: #3a3a3a;
+  color: #d4af37;
+}
+
+.status.cancelled {
+  background: #3a0000;
+  color: #ff9999;
+}
+
+.booking-details {
+  margin-bottom: 1rem;
+}
+
+.booking-details p {
+  margin: 0.5rem 0;
+  color: #b0b0b0;
+}
+
+.booking-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-checkin, .btn-checkout, .btn-cancel {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 4px;
+  font-weight: bold;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.btn-checkin, .btn-checkout {
+  background: linear-gradient(135deg, #d4af37 0%, #f0e68c 100%);
+  color: #1a1a1a;
+}
+
+.btn-checkin:hover, .btn-checkout:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+}
+
+.btn-cancel {
+  background: #8b0000;
+  color: #ff9999;
+  border: 1px solid #ff9999;
+}
+
+.btn-cancel:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .booking-actions {
+    flex-direction: column;
+  }
+
+  .btn-checkin, .btn-checkout, .btn-cancel {
+    width: 100%;
+  }
+}
