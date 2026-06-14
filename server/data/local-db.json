@@ -18,7 +18,7 @@
       "images": [],
       "floor": 1,
       "createdAt": "2026-05-28T20:43:23.679Z",
-      "updatedAt": "2026-06-13T15:03:06.847Z"
+      "updatedAt": "2026-06-14T01:36:04.639Z"
     },
     {
       "_id": "room-double-204",
@@ -132,6 +132,20 @@
       "id": "6fa5c74d-3da6-4c6d-ab2c-3bc1985c8887",
       "createdAt": "2026-06-13T15:03:06.827Z",
       "updatedAt": "2026-06-13T15:03:06.827Z"
+    },
+    {
+      "status": "Pending",
+      "bookingId": "BOOK1781400964603",
+      "userId": "guest_user",
+      "roomId": "room-single-101",
+      "checkInDate": "2026-06-14T07:05",
+      "checkOutDate": "2026-06-15T07:05",
+      "numberOfGuests": 1,
+      "totalPrice": 1800,
+      "_id": "b534ae8b-48d7-4bea-afc8-a1d60f7dd72a",
+      "id": "b534ae8b-48d7-4bea-afc8-a1d60f7dd72a",
+      "createdAt": "2026-06-14T01:36:04.633Z",
+      "updatedAt": "2026-06-14T01:36:04.633Z"
     }
   ],
   "payments": [],
