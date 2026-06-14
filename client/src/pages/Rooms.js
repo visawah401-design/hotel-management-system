@@ -8,68 +8,68 @@ const defaultRooms = [
   {
     _id: 'dummy_1',
     roomNumber: '101',
-    roomType: 'Deluxe Ocean View',
-    capacity: 2,
-    pricePerNight: 4500,
+    roomType: 'Standard Single Room',
+    capacity: 1,
+    pricePerNight: 900,
     status: 'Available',
-    description: 'Experience luxury with a breathtaking ocean view. Includes complimentary breakfast and spa access.',
-    amenities: ['Free WiFi', 'AC', 'Ocean View', 'Mini Bar', 'Restaurant', 'Water Cooler', '24/7 Service'],
-    image: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=800&q=80'
+    description: 'A cozy and affordable room, perfect for solo travelers.',
+    amenities: ['Free WiFi', 'AC', 'TV', 'Room Service'],
+    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80'
   },
   {
     _id: 'dummy_2',
     roomNumber: '102',
-    roomType: 'Presidential Suite',
-    capacity: 4,
-    pricePerNight: 12000,
+    roomType: 'Comfort Double Room',
+    capacity: 2,
+    pricePerNight: 1150,
     status: 'Available',
-    description: 'The ultimate luxury experience. Spacious living area, private balcony, and 24/7 butler service.',
-    amenities: ['Free WiFi', 'AC', 'Private Pool', 'Restaurant', 'RO Water', 'Smart TV'],
-    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80'
+    description: 'Spacious double room, perfectly comfortable for couples or two guests.',
+    amenities: ['Free WiFi', 'AC', 'Balcony', 'Restaurant', 'Smart TV'],
+    image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80'
   },
   {
     _id: 'dummy_3',
     roomNumber: '103',
-    roomType: 'Cozy Family Room',
-    capacity: 4,
-    pricePerNight: 6000,
+    roomType: 'Couple Hourly (3-4 Hrs)',
+    capacity: 2,
+    pricePerNight: 600,
     status: 'Available',
-    description: 'Perfect for families. Two queen beds, kids play corner, and close to the resort pool.',
-    amenities: ['Free WiFi', 'AC', 'Pool Access', 'Restaurant', 'Water Cooler', 'Room Service'],
-    image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80'
+    description: 'Short stay room. Perfect for resting and absolute privacy for 3-4 hours.',
+    amenities: ['Free WiFi', 'AC', 'Shower', 'Total Privacy', 'In-room Dining'],
+    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80'
   },
   {
     _id: 'dummy_4',
     roomNumber: '104',
-    roomType: 'Hourly Transit Room',
-    capacity: 1,
-    pricePerNight: 1500,
+    roomType: 'Premium Double',
+    capacity: 3,
+    pricePerNight: 1150,
     status: 'Available',
-    description: 'Short stay transit room. Perfect for resting between flights or meetings. Available for 6 hours.',
-    amenities: ['Free WiFi', 'AC', 'Shower', 'Water Cooler', 'In-room Dining'],
-    image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=800&q=80'
+    description: 'Extra space with an additional bed, ideal for small families.',
+    amenities: ['Free WiFi', 'AC', 'Mini Bar', 'Restaurant', 'Room Service'],
+    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=800&q=80'
   },
   {
     _id: 'dummy_5',
     roomNumber: '105',
-    roomType: 'Honeymoon Suite',
+    roomType: 'Deluxe Suite',
     capacity: 2,
-    pricePerNight: 8500,
+    pricePerNight: 1150,
     status: 'Available',
-    description: 'Romantic setup with flower decoration, complimentary wine, and a private jacuzzi.',
+    description: 'Luxury experience with a spacious living area and premium amenities.',
     amenities: ['AC', 'Jacuzzi', 'Balcony', 'Restaurant', 'Hot Water', 'Room Service'],
-    image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80'
+    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80'
   },
   {
     _id: 'dummy_6',
     roomNumber: '106',
     roomType: 'Standard Single Room',
     capacity: 1,
-    pricePerNight: 2000,
+    pricePerNight: 900,
     status: 'Available',
-    description: 'A cozy and affordable room, perfect for solo travelers and business trips.',
+    description: 'A cozy and affordable room, perfect for solo travelers.',
     amenities: ['Free WiFi', 'AC', 'Smart TV', 'Water Cooler', 'Restaurant Menu'],
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80'
+    image: 'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=800&q=80'
   }
 ];
 
@@ -79,6 +79,12 @@ function Rooms({ isLoggedIn }) {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [filterType, setFilterType] = useState('All');
   const [successData, setSuccessData] = useState(null); // Welcome card dikhane ke liye naya state
+  
+  // Multi Booking Modal State
+  const [showMultiBookingForm, setShowMultiBookingForm] = useState(false);
+  const [multiBookingData, setMultiBookingData] = useState({
+    companyName: '', guestName: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 2, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 2, totalAmount: '', advance: '', paymentMethod: 'Pay at Hotel'
+  });
   const [bookingData, setBookingData] = useState({
     checkInDate: '',
     checkOutDate: '',
@@ -139,10 +145,18 @@ function Rooms({ isLoggedIn }) {
           const randomPics = [
             'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80',
             'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80'
+            'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=800&q=80'
           ];
           room.image = randomPics[index % randomPics.length];
         }
+      
+      // Strict pricing rule as per requirement
+      if (room.roomType && (room.roomType.toLowerCase().includes('couple') || room.roomType.toLowerCase().includes('hour'))) {
+        room.pricePerNight = 600;
+      } else if (room.pricePerNight > 1150) {
+        room.pricePerNight = 1150;
+      }
+
         return room;
       });
 
@@ -216,6 +230,57 @@ function Rooms({ isLoggedIn }) {
     }
   };
 
+  const handleMultiBookingSubmit = (e) => {
+    e.preventDefault();
+    const newId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
+    
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-GB');
+    };
+
+    const existingBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
+    
+    existingBookings[newId] = {
+      name: multiBookingData.guestName,
+      companyName: multiBookingData.companyName,
+      room: multiBookingData.room,
+      roomCount: multiBookingData.roomCount,
+      photo: '',
+      checkIn: formatDate(multiBookingData.checkIn),
+      checkOut: formatDate(multiBookingData.checkOut),
+      rawCheckIn: multiBookingData.checkIn,
+      rawCheckOut: multiBookingData.checkOut,
+      mobile: multiBookingData.mobile || '',
+      address: multiBookingData.address || 'Corporate Booking',
+      guestGstin: multiBookingData.guestGstin || '',
+      guests: multiBookingData.guests || 2,
+      paymentMethod: multiBookingData.paymentMethod || 'Pay at Hotel',
+      advance: 0,
+      totalAmount: multiBookingData.totalAmount,
+      status: 'Pending'
+    };
+    
+    localStorage.setItem('vip_bookings', JSON.stringify(existingBookings));
+
+    setSuccessData({
+      bookingId: newId,
+      name: multiBookingData.guestName,
+      companyName: multiBookingData.companyName,
+      roomName: `${multiBookingData.roomCount} Rooms (${multiBookingData.room})`,
+      checkIn: formatDate(multiBookingData.checkIn),
+      checkOut: formatDate(multiBookingData.checkOut),
+      photo: '',
+      mobile: multiBookingData.mobile || '0000000000',
+      date: new Date().toLocaleDateString('en-GB')
+    });
+
+    setShowMultiBookingForm(false);
+    setMultiBookingData({ companyName: '', guestName: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 2, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 2, totalAmount: '', advance: '', paymentMethod: 'Pay at Hotel' });
+    fetchRooms();
+  };
+
   // Photo select karne par uska preview banane ka function
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -263,15 +328,17 @@ function Rooms({ isLoggedIn }) {
     }
     // --------------------------------------------------
 
-    // Naya Logic: Booking ID ke hisaab se specific user ki details save karna
-    const saveToProfile = (bookingId) => {
-      const existingBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-      
-      const formatDt = (dt) => {
-        if (!dt) return '';
-        const d = new Date(dt);
-        return isNaN(d.getTime()) ? dt : d.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true});
-      };
+    // Helper logic to finalize booking after payment check
+    const finalizeBookingProcess = async (paymentId = null) => {
+      // Naya Logic: Booking ID ke hisaab se specific user ki details save karna
+      const saveToProfile = (bookingId) => {
+        const existingBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
+        
+        const formatDt = (dt) => {
+          if (!dt) return '';
+          const d = new Date(dt);
+          return isNaN(d.getTime()) ? dt : d.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true});
+        };
 
       existingBookings[bookingId] = {
         name: guestName,
@@ -300,16 +367,16 @@ function Rooms({ isLoggedIn }) {
       localStorage.setItem('vip_mobile', bookingData.mobile || '');
     };
 
-    // Demo rooms par book karne par ab premium Success Card dikhega
-    if (selectedRoom._id.startsWith('dummy')) {
-      const generatedId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
-      saveToProfile(generatedId);
-
-      const formatDt = (dt) => {
-        if (!dt) return '';
-        const d = new Date(dt);
-        return isNaN(d.getTime()) ? dt : d.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true});
-      };
+      // Demo rooms par book karne par ab premium Success Card dikhega
+      if (selectedRoom._id.startsWith('dummy')) {
+        const generatedId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
+        saveToProfile(generatedId);
+  
+        const formatDt = (dt) => {
+          if (!dt) return '';
+          const d = new Date(dt);
+          return isNaN(d.getTime()) ? dt : d.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true});
+        };
 
       setSuccessData({
         bookingId: generatedId,
@@ -327,18 +394,18 @@ function Rooms({ isLoggedIn }) {
       return;
     }
 
-    try {
-      const userId = localStorage.getItem('userId') || 'guest_user'; // Agar user login nahi hai, toh bhi error na aaye
-      const response = await axios.post('/api/bookings', {
-        userId,
-        roomId: selectedRoom._id,
-        checkInDate: bookingData.checkInDate,
-        checkOutDate: bookingData.checkOutDate,
-        numberOfGuests: bookingData.numberOfGuests,
-      });
-      
-      const generatedId = response.data.bookingId || 'VSW-' + Math.floor(100000 + Math.random() * 900000);
-      saveToProfile(generatedId);
+      try {
+        const userId = localStorage.getItem('userId') || 'guest_user'; // Agar user login nahi hai, toh bhi error na aaye
+        const response = await axios.post('/api/bookings', {
+          userId,
+          roomId: selectedRoom._id,
+          checkInDate: bookingData.checkInDate,
+          checkOutDate: bookingData.checkOutDate,
+          numberOfGuests: bookingData.numberOfGuests,
+        });
+        
+        const generatedId = response.data.bookingId || 'VSW-' + Math.floor(100000 + Math.random() * 900000);
+        saveToProfile(generatedId);
 
       const formatDt = (dt) => {
         if (!dt) return '';
@@ -359,8 +426,71 @@ function Rooms({ isLoggedIn }) {
 
       setSelectedRoom(null);
       fetchRooms();
-    } catch (error) {
-      alert('Booking failed: ' + (error.response?.data?.message || error.message));
+      } catch (error) {
+        alert('Booking failed: ' + (error.response?.data?.message || error.message));
+      }
+    };
+
+    const advanceAmt = parseFloat(bookingData.advancePayment) || 0;
+    const amountToPay = advanceAmt > 0 ? advanceAmt : totalAmount;
+
+    if (bookingData.paymentMethod === 'Pay Online') {
+      const res = await new Promise((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+      });
+
+      if (!res) {
+        alert('Razorpay SDK failed to load. Are you online?');
+        return;
+      }
+
+      try {
+        const orderData = await axios.post('/api/payments/create-order', { amount: amountToPay });
+        const { id: order_id, currency } = orderData.data;
+
+        const options = {
+          key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_T17mWs6lrO5aNR',
+          amount: Math.round(amountToPay * 100).toString(),
+          currency: currency,
+          name: "Viswa Hotel & Resorts",
+          description: "Room Booking Reservation",
+          image: "/logo.png",
+          order_id: order_id,
+          handler: async function (response) {
+            try {
+              const verifyResult = await axios.post('/api/payments/verify-payment', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              });
+              if (verifyResult.data.success) {
+                finalizeBookingProcess(response.razorpay_payment_id);
+              }
+            } catch (error) {
+              alert('Payment verification failed!');
+            }
+          },
+          prefill: {
+            name: guestName,
+            contact: bookingData.mobile || "",
+          },
+          theme: { color: "#d4af37" }
+        };
+
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.on('payment.failed', function (response){
+            alert('Payment Failed: ' + response.error.description);
+        });
+        paymentObject.open();
+      } catch (error) {
+        alert('Could not initiate payment: ' + (error.response?.data?.message || error.message));
+      }
+    } else {
+      finalizeBookingProcess();
     }
   };
 
@@ -448,6 +578,14 @@ function Rooms({ isLoggedIn }) {
             <button style={filterButtonStyle(filterType === 'Available')} onClick={() => setFilterType('Available')}>Available Rooms</button>
             <button style={filterButtonStyle(filterType === 'Booked')} onClick={() => setFilterType('Booked')}>Booked / Unavailable</button>
             <button style={filterButtonStyle(filterType === 'Offers')} onClick={() => setFilterType('Offers')}>Special Offers</button>
+            <button 
+              style={{ ...filterButtonStyle(false), background: 'linear-gradient(135deg, #d4af37, #b5952f)', color: '#111', boxShadow: '0 4px 10px rgba(212,175,55,0.4)', border: 'none' }} 
+              onClick={() => {
+                setShowMultiBookingForm(true);
+              }}
+            >
+              🏢 Multi / Corp Booking
+            </button>
           </div>
           <div className="rooms-grid">
             {filteredRooms.length > 0 ? (
@@ -536,7 +674,7 @@ function Rooms({ isLoggedIn }) {
 
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <label style={labelStyle}>Mobile Number *</label>
-                    <input type="tel" required value={bookingData.mobile} onChange={(e) => setBookingData({...bookingData, mobile: e.target.value})} style={inputStyle} placeholder="Enter 10-digit number" />
+                    <input type="tel" required value={bookingData.mobile} onChange={(e) => setBookingData({...bookingData, mobile: e.target.value.replace(/\D/g, '').slice(0, 10)})} style={inputStyle} placeholder="Enter 10-digit number" maxLength="10" pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number" />
                   </div>
                 </div>
 
@@ -587,9 +725,8 @@ function Rooms({ isLoggedIn }) {
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <label style={labelStyle}>Payment Method *</label>
                     <select required value={bookingData.paymentMethod} onChange={(e) => setBookingData({ ...bookingData, paymentMethod: e.target.value })} style={inputStyle}>
-                      <option>Pay at Hotel</option>
-                      <option>UPI</option>
-                      <option>Credit / Debit Card</option>
+                      <option value="Pay at Hotel">Pay at Hotel (Cash / Counter QR)</option>
+                      <option value="Pay Online">Pay Online Now (UPI / Cards)</option>
                     </select>
                   </div>
 
@@ -632,6 +769,94 @@ function Rooms({ isLoggedIn }) {
 
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Corporate / Multi Booking Modal for Guests */}
+      {showMultiBookingForm && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overflowY: 'auto' }}>
+          <div style={{ background: '#111', padding: '40px', borderRadius: '15px', border: '1px solid #d4af37', maxWidth: '850px', width: '100%', position: 'relative', margin: 'auto', boxShadow: '0 15px 40px rgba(0,0,0,0.8)' }}>
+            <button onClick={() => setShowMultiBookingForm(false)} style={{ position: 'absolute', top: '15px', right: '20px', background: 'none', border: 'none', color: '#fff', fontSize: '28px', cursor: 'pointer' }}>&times;</button>
+            
+            <h2 style={{ color: '#d4af37', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginTop: 0, fontSize: '2rem', fontFamily: 'Georgia, serif' }}>Corporate / Multi-Room Booking</h2>
+            <p style={{ color: '#aaa', marginBottom: '25px' }}>Book multiple rooms together under a company or group name. A combined VIP Pass will be generated instantly.</p>
+            
+            <form onSubmit={handleMultiBookingSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Company / Group Name (Optional)</label>
+                <input type="text" value={multiBookingData.companyName} onChange={(e) => setMultiBookingData({...multiBookingData, companyName: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="e.g. Garud Stacks Pvt. Ltd." />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Primary Booker Name *</label>
+                <input type="text" required value={multiBookingData.guestName} onChange={(e) => setMultiBookingData({...multiBookingData, guestName: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="Enter Name" />
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Mobile Number *</label>
+                <input type="tel" required value={multiBookingData.mobile} onChange={(e) => setMultiBookingData({...multiBookingData, mobile: e.target.value.replace(/\D/g, '').slice(0, 10)})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="10-digit Mobile" maxLength="10" pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Company GSTIN (Optional)</label>
+                <input type="text" value={multiBookingData.guestGstin} onChange={(e) => setMultiBookingData({...multiBookingData, guestGstin: e.target.value.toUpperCase()})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem', textTransform: 'uppercase' }} placeholder="e.g. 23XXXXX..." />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Rooms Required (Category & Numbers) *</label>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '5px' }}>
+                  {['Deluxe', 'Super Deluxe', 'Suite', 'Standard', 'Conference Hall'].map(cat => (
+                    <button type="button" key={cat} onClick={() => setMultiBookingData(prev => ({...prev, room: prev.room ? prev.room + ', ' + cat : cat}))} style={{ background: 'rgba(212,175,55,0.1)', color: '#d4af37', border: '1px solid #d4af37', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>+ {cat}</button>
+                  ))}
+                  <button type="button" onClick={() => setMultiBookingData(prev => ({...prev, room: ''}))} style={{ background: 'rgba(231,76,60,0.1)', color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>Clear</button>
+                </div>
+                <input type="text" required value={multiBookingData.room} onChange={(e) => setMultiBookingData({...multiBookingData, room: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="e.g. 5 Deluxe Rooms & 1 Hall" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Rooms Booked *</label>
+                <input type="number" min="1" required value={multiBookingData.roomCount} onChange={(e) => setMultiBookingData({...multiBookingData, roomCount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Check-In Date *</label>
+                <input type="date" required value={multiBookingData.checkIn} onChange={(e) => setMultiBookingData({...multiBookingData, checkIn: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold', margin: 0 }}>Check-Out Date *</label>
+                  <span style={{ color: '#27ae60', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(39,174,96,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{Math.max(1, Math.ceil((new Date(multiBookingData.checkOut) - new Date(multiBookingData.checkIn)) / (1000 * 60 * 60 * 24)) || 1)} Night(s)</span>
+                </div>
+                <input type="date" required value={multiBookingData.checkOut} onChange={(e) => setMultiBookingData({...multiBookingData, checkOut: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Guests *</label>
+                <input type="number" min="1" required value={multiBookingData.guests} onChange={(e) => setMultiBookingData({...multiBookingData, guests: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Payment Method *</label>
+                <select value={multiBookingData.paymentMethod} onChange={(e) => setMultiBookingData({...multiBookingData, paymentMethod: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#222', color: '#fff', outline: 'none', fontSize: '1rem' }}>
+                  <option value="Pay at Hotel">Pay at Hotel</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="UPI">UPI</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Expected Amount (Rs.) *</label>
+                <input type="number" min="0" required value={multiBookingData.totalAmount} onChange={(e) => setMultiBookingData({...multiBookingData, totalAmount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #d4af37', background: 'rgba(212,175,55,0.05)', color: '#d4af37', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
+              </div>
+
+              <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                <button type="submit" style={{ width: '100%', background: 'linear-gradient(135deg, #d4af37, #b5952f)', color: '#111', padding: '18px', borderRadius: '10px', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', border: 'none', boxShadow: '0 8px 20px rgba(212,175,55,0.3)', textTransform: 'uppercase', letterSpacing: '2px', transition: '0.3s' }}>
+                  🏨 Confirm Multi-Booking & Get VIP Pass
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

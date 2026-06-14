@@ -20,32 +20,32 @@ const heroSlides = [
     label: 'Cozy hotel bedroom',
   },
   {
-    image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1800&q=80',
-    label: 'Reception and check-in',
+    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1800&q=80',
+    label: 'Luxury twin beds',
   },
   {
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=80',
-    label: 'Resort exterior',
+    image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1800&q=80',
+    label: 'Spacious guest room',
   },
 ];
 
 const roomRent = [
   {
     type: 'Single Room',
-    price: '1800',
+    price: '900',
     detail: 'Smart choice for solo and business guests.',
     image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=900&q=80',
   },
   {
     type: 'Double Room',
-    price: '2800',
+    price: '1150',
     detail: 'Comfortable room for couples and small families.',
     image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=900&q=80',
   },
   {
-    type: 'Suite Room',
-    price: '5200',
-    detail: 'Premium stay with extra space and luxury comfort.',
+    type: 'Couple Hourly (3-4 Hrs)',
+    price: '600',
+    detail: 'Short stay room with perfect comfort and complete privacy.',
     image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=900&q=80',
   },
 ];
@@ -63,28 +63,28 @@ const facilities = [
 
 const gallery = [
   {
-    title: 'Reception Lobby',
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=80',
+    title: 'Royal Suite Room',
+    image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=900&q=80',
   },
   {
     title: 'Premium Bedroom',
     image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=900&q=80',
   },
   {
-    title: 'Dining Area',
-    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=900&q=80',
+    title: 'Standard Single',
+    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=900&q=80',
   },
   {
-    title: 'Pool & Leisure',
-    image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=900&q=80',
+    title: 'Comfort Double',
+    image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=900&q=80',
   },
   {
     title: 'Suite Lounge',
-    image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=900&q=80',
+    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=900&q=80',
   },
   {
-    title: 'Event Setup',
-    image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=900&q=80',
+    title: 'Luxury Twin',
+    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=900&q=80',
   },
 ];
 
@@ -317,8 +317,8 @@ function Home() {
 
       <section className="split-section event-section">
         <img
-          src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1000&q=80"
-          alt="Hotel event hall"
+          src="https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1000&q=80"
+          alt="Event suite setup"
         />
         <div>
           <span className="eyebrow">Events & Functions</span>

@@ -2,11 +2,23 @@ import React, { useState, useEffect } from 'react';
 import './Admin.css';
 
 function Admin() {
-  const [activeTab, setActiveTab] = useState(localStorage.getItem('role') === 'sadmin' ? 'analytics' : 'dashboard');
+  const queryParams = new URLSearchParams(window.location.search);
+  const defaultTab = queryParams.get('tab') || (localStorage.getItem('role') === 'sadmin' ? 'analytics' : 'dashboard');
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [bookings, setBookings] = useState([]);
   const [viewModal, setViewModal] = useState(null); // 'details' or 'bill'
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedStaff, setSelectedStaff] = useState(null);
+
+  // New Manual Bill State
+  const [customBill, setCustomBill] = useState({
+    name: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 1, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 1, totalAmount: '', advance: '', paymentMethod: 'Cash'
+  });
+
+  // New Multi Booking State
+  const [multiBookingData, setMultiBookingData] = useState({
+    companyName: '', guestName: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 2, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 2, totalAmount: '', advance: '', paymentMethod: 'Bank Transfer'
+  });
 
   // Filters ke liye naye states
   const [filterStatus, setFilterStatus] = useState('All'); // All, Active, CheckedOut
@@ -125,6 +137,91 @@ function Admin() {
       localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
       setBookings(bookings.filter(b => b.id !== id));
     }
+  };
+
+  // Custom Bill Generate Logic
+  const handleCreateBill = (e) => {
+    e.preventDefault();
+    const newId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
+    
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-GB');
+    };
+
+    const newBooking = {
+      id: newId,
+      name: customBill.name,
+      mobile: customBill.mobile,
+      address: customBill.address || 'Not provided',
+      guestGstin: customBill.guestGstin || '',
+      room: customBill.room,
+      roomCount: customBill.roomCount || 1,
+      checkIn: formatDate(customBill.checkIn),
+      checkOut: formatDate(customBill.checkOut),
+      rawCheckIn: customBill.checkIn,
+      rawCheckOut: customBill.checkOut,
+      guests: customBill.guests,
+      totalAmount: customBill.totalAmount,
+      advance: customBill.advance || 0,
+      paymentMethod: customBill.paymentMethod,
+      status: 'Checked-Out', // Automatically marked as done
+      actualCheckOut: new Date().toLocaleDateString('en-GB') + ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
+    allBookings[newId] = newBooking;
+    localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
+    
+    setBookings([newBooking, ...bookings]);
+    setSelectedBooking(newBooking);
+    setViewModal('bill');
+    
+    setCustomBill({ name: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 1, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 1, totalAmount: '', advance: '', paymentMethod: 'Cash' });
+  };
+
+  // Multi Booking Generate Logic
+  const handleMultiBookingSubmit = (e) => {
+    e.preventDefault();
+    const newId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
+    
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-GB');
+    };
+
+    const newBooking = {
+      id: newId,
+      name: multiBookingData.guestName,
+      companyName: multiBookingData.companyName,
+      mobile: multiBookingData.mobile,
+      address: multiBookingData.address || 'Corporate Booking',
+      guestGstin: multiBookingData.guestGstin || '',
+      room: multiBookingData.room,
+      roomCount: multiBookingData.roomCount || 1,
+      checkIn: formatDate(multiBookingData.checkIn),
+      checkOut: formatDate(multiBookingData.checkOut),
+      rawCheckIn: multiBookingData.checkIn,
+      rawCheckOut: multiBookingData.checkOut,
+      guests: multiBookingData.guests,
+      totalAmount: multiBookingData.totalAmount,
+      advance: multiBookingData.advance || 0,
+      paymentMethod: multiBookingData.paymentMethod,
+      status: 'Checked-In', // Active live booking
+      actualCheckOut: null
+    };
+
+    const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
+    allBookings[newId] = newBooking;
+    localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
+    
+    setBookings([newBooking, ...bookings]);
+    setSelectedBooking(newBooking);
+    setViewModal('bill');
+    
+    setMultiBookingData({ companyName: '', guestName: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 2, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 2, totalAmount: '', advance: '', paymentMethod: 'Bank Transfer' });
   };
 
   // Staff Attendance Update & Daily Record Logic
@@ -311,11 +408,11 @@ function Admin() {
           <button className={activeTab === 'bookings' ? 'active' : ''} onClick={() => setActiveTab('bookings')}>
             🧾 All Bookings
           </button>
-          <button className={activeTab === 'rooms' ? 'active' : ''} onClick={() => setActiveTab('rooms')}>
-            🛏️ Manage Rooms
+          <button className={activeTab === 'multi_booking' ? 'active' : ''} onClick={() => setActiveTab('multi_booking')}>
+            🏢 Multi/Corp Booking
           </button>
-          <button className={activeTab === 'guests' ? 'active' : ''} onClick={() => setActiveTab('guests')}>
-            👥 VIP Guests
+          <button className={activeTab === 'create_bill' ? 'active' : ''} onClick={() => setActiveTab('create_bill')}>
+            📝 Create Bill
           </button>
           <button className={activeTab === 'staff' ? 'active' : ''} onClick={() => setActiveTab('staff')}>
             👔 Staff Management
@@ -506,7 +603,10 @@ function Admin() {
                 {displayedBookings.length > 0 ? displayedBookings.map((booking, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#ccc' }}>
                     <td style={{ padding: '15px', fontFamily: 'monospace', color: '#fff' }}>{booking.id}</td>
-                    <td style={{ padding: '15px' }}>{booking.name}<br/><small style={{color:'#888'}}>{booking.mobile}</small></td>
+                    <td style={{ padding: '15px' }}>
+                      {booking.companyName && <><strong style={{color:'#d4af37'}}>{booking.companyName}</strong><br/></>}
+                      {booking.name}<br/><small style={{color:'#888'}}>{booking.mobile}</small>
+                    </td>
                     <td style={{ padding: '15px' }}>{booking.room}</td>
                     <td style={{ padding: '15px' }}>
                       {(() => {
@@ -819,6 +919,189 @@ function Admin() {
           </div>
         )}
 
+        {activeTab === 'multi_booking' && (
+          <div style={{ background: 'rgba(20,20,20,0.8)', padding: '30px', borderRadius: '15px', border: '1px solid rgba(212,175,55,0.2)', maxWidth: '850px', margin: '0 auto' }}>
+            <h2 style={{ color: '#d4af37', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginTop: 0, fontSize: '2rem', fontFamily: 'Georgia, serif' }}>Corporate / Multi-Room Booking</h2>
+            <p style={{ color: '#aaa', marginBottom: '25px' }}>Book multiple rooms together under a company or group name. This creates an active (live) booking and generates a consolidated tax invoice instantly.</p>
+            
+            <form onSubmit={handleMultiBookingSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Company / Group Name (Optional)</label>
+                <input type="text" value={multiBookingData.companyName} onChange={(e) => setMultiBookingData({...multiBookingData, companyName: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="e.g. Garud Stacks Pvt. Ltd." />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Primary Booker Name *</label>
+                <input type="text" required value={multiBookingData.guestName} onChange={(e) => setMultiBookingData({...multiBookingData, guestName: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="Enter Name" />
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Mobile Number *</label>
+                <input type="tel" required value={multiBookingData.mobile} onChange={(e) => setMultiBookingData({...multiBookingData, mobile: e.target.value.replace(/\D/g, '').slice(0, 10)})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="10-digit Mobile" maxLength="10" pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Company GSTIN (For B2B Invoice)</label>
+                <input type="text" value={multiBookingData.guestGstin} onChange={(e) => setMultiBookingData({...multiBookingData, guestGstin: e.target.value.toUpperCase()})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', textTransform: 'uppercase' }} placeholder="e.g. 23XXXXX..." />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Company Address (Optional)</label>
+                <input type="text" value={multiBookingData.address} onChange={(e) => setMultiBookingData({...multiBookingData, address: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="City, State" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Rooms Blocked (Category & Numbers) *</label>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '5px' }}>
+                  {['Deluxe', 'Super Deluxe', 'Suite', 'Standard', 'Conference Hall'].map(cat => (
+                    <button type="button" key={cat} onClick={() => setMultiBookingData(prev => ({...prev, room: prev.room ? prev.room + ', ' + cat : cat}))} style={{ background: 'rgba(212,175,55,0.1)', color: '#d4af37', border: '1px solid #d4af37', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>+ {cat}</button>
+                  ))}
+                  <button type="button" onClick={() => setMultiBookingData(prev => ({...prev, room: ''}))} style={{ background: 'rgba(231,76,60,0.1)', color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>Clear</button>
+                </div>
+                <input type="text" required value={multiBookingData.room} onChange={(e) => setMultiBookingData({...multiBookingData, room: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="e.g. 5 Deluxe Rooms (101-105) & 1 Hall" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Rooms Booked *</label>
+                <input type="number" min="1" required value={multiBookingData.roomCount} onChange={(e) => setMultiBookingData({...multiBookingData, roomCount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Check-In Date *</label>
+                <input type="date" required value={multiBookingData.checkIn} onChange={(e) => setMultiBookingData({...multiBookingData, checkIn: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold', margin: 0 }}>Check-Out Date *</label>
+                  <span style={{ color: '#27ae60', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(39,174,96,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{Math.max(1, Math.ceil((new Date(multiBookingData.checkOut) - new Date(multiBookingData.checkIn)) / (1000 * 60 * 60 * 24)) || 1)} Night(s)</span>
+                </div>
+                <input type="date" required value={multiBookingData.checkOut} onChange={(e) => setMultiBookingData({...multiBookingData, checkOut: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Guests *</label>
+                <input type="number" min="1" required value={multiBookingData.guests} onChange={(e) => setMultiBookingData({...multiBookingData, guests: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Payment Method *</label>
+                <select value={multiBookingData.paymentMethod} onChange={(e) => setMultiBookingData({...multiBookingData, paymentMethod: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }}>
+                  <option value="Bank Transfer">Bank Transfer (NEFT/RTGS)</option>
+                  <option value="UPI">UPI / QR Code</option>
+                  <option value="Credit / Debit Card">Credit / Debit Card</option>
+                  <option value="Cash">Cash / Cheque</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Package Amount (Rs.) *</label>
+                <input type="number" min="0" required value={multiBookingData.totalAmount} onChange={(e) => setMultiBookingData({...multiBookingData, totalAmount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #d4af37', background: 'rgba(212,175,55,0.05)', color: '#d4af37', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Advance Received (Rs.)</label>
+                <input type="number" min="0" value={multiBookingData.advance} onChange={(e) => setMultiBookingData({...multiBookingData, advance: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #27ae60', background: 'rgba(39, 174, 96, 0.05)', color: '#27ae60', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
+              </div>
+
+              <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                <button type="submit" style={{ width: '100%', background: 'linear-gradient(135deg, #d4af37, #b5952f)', color: '#111', padding: '18px', borderRadius: '10px', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', border: 'none', boxShadow: '0 8px 20px rgba(212,175,55,0.3)', textTransform: 'uppercase', letterSpacing: '2px', transition: '0.3s' }}>
+                  🏨 Confirm Corporate Booking & Generate Bill
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {activeTab === 'create_bill' && (
+          <div style={{ background: 'rgba(20,20,20,0.8)', padding: '30px', borderRadius: '15px', border: '1px solid rgba(212,175,55,0.2)', maxWidth: '800px', margin: '0 auto' }}>
+            <h2 style={{ color: '#d4af37', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginTop: 0, fontSize: '2rem', fontFamily: 'Georgia, serif' }}>Create Manual Invoice</h2>
+            <p style={{ color: '#aaa', marginBottom: '25px' }}>Enter the guest and stay details below to instantly generate a professional tax invoice and save it to the system records.</p>
+            
+            <form onSubmit={handleCreateBill} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Guest Name *</label>
+                <input type="text" required value={customBill.name} onChange={(e) => setCustomBill({...customBill, name: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="Enter Name" />
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Mobile Number *</label>
+                <input type="tel" required value={customBill.mobile} onChange={(e) => setCustomBill({...customBill, mobile: e.target.value.replace(/\D/g, '').slice(0, 10)})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="10-digit Mobile" maxLength="10" pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Guest GSTIN (Optional / For Gov-B2B)</label>
+                <input type="text" value={customBill.guestGstin} onChange={(e) => setCustomBill({...customBill, guestGstin: e.target.value.toUpperCase()})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', textTransform: 'uppercase' }} placeholder="e.g. 23XXXXX..." />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Address (Optional)</label>
+                <input type="text" value={customBill.address} onChange={(e) => setCustomBill({...customBill, address: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="City, State" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Room Details (Category & Numbers) *</label>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '5px' }}>
+                  {['Deluxe', 'Super Deluxe', 'Suite', 'Standard', 'Single', 'Double'].map(cat => (
+                    <button type="button" key={cat} onClick={() => setCustomBill(prev => ({...prev, room: prev.room ? prev.room + ', ' + cat : cat}))} style={{ background: 'rgba(212,175,55,0.1)', color: '#d4af37', border: '1px solid #d4af37', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>+ {cat}</button>
+                  ))}
+                  <button type="button" onClick={() => setCustomBill(prev => ({...prev, room: ''}))} style={{ background: 'rgba(231,76,60,0.1)', color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>Clear</button>
+                </div>
+                <input type="text" required value={customBill.room} onChange={(e) => setCustomBill({...customBill, room: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="e.g. 2 Deluxe Rooms (101, 102)" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Rooms *</label>
+                <input type="number" min="1" required value={customBill.roomCount} onChange={(e) => setCustomBill({...customBill, roomCount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Check-In Date *</label>
+                <input type="date" required value={customBill.checkIn} onChange={(e) => setCustomBill({...customBill, checkIn: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold', margin: 0 }}>Check-Out Date *</label>
+                  <span style={{ color: '#27ae60', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(39,174,96,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{Math.max(1, Math.ceil((new Date(customBill.checkOut) - new Date(customBill.checkIn)) / (1000 * 60 * 60 * 24)) || 1)} Night(s)</span>
+                </div>
+                <input type="date" required value={customBill.checkOut} onChange={(e) => setCustomBill({...customBill, checkOut: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Guests</label>
+                <input type="number" min="1" required value={customBill.guests} onChange={(e) => setCustomBill({...customBill, guests: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Payment Method *</label>
+                <select value={customBill.paymentMethod} onChange={(e) => setCustomBill({...customBill, paymentMethod: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }}>
+                  <option value="Cash">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Credit / Debit Card">Credit / Debit Card</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Amount (Rs.) *</label>
+                <input type="number" min="0" required value={customBill.totalAmount} onChange={(e) => setCustomBill({...customBill, totalAmount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #d4af37', background: 'rgba(212,175,55,0.05)', color: '#d4af37', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Advance Paid (Rs.)</label>
+                <input type="number" min="0" value={customBill.advance} onChange={(e) => setCustomBill({...customBill, advance: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #27ae60', background: 'rgba(39, 174, 96, 0.05)', color: '#27ae60', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
+              </div>
+
+              <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                <button type="submit" style={{ width: '100%', background: 'linear-gradient(135deg, #d4af37, #b5952f)', color: '#111', padding: '18px', borderRadius: '10px', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', border: 'none', boxShadow: '0 8px 20px rgba(212,175,55,0.3)', textTransform: 'uppercase', letterSpacing: '2px', transition: '0.3s' }}>
+                  🧾 Generate Final Bill
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* Modals for Details and Bill */}
         {viewModal && selectedBooking && (
           <div className="admin-modal-overlay" onClick={() => setViewModal(null)}>
@@ -835,11 +1118,14 @@ function Admin() {
                     </div>
                     <div style={{ flex: '2 1 400px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', alignContent: 'start' }}>
                       <div><small style={{ color: '#777' }}>Booking ID</small><br/><strong style={{ color: '#fff', fontFamily: 'monospace' }}>{selectedBooking.id}</strong></div>
+                      {selectedBooking.companyName && <div><small style={{ color: '#777' }}>Company Name</small><br/><strong style={{ color: '#d4af37' }}>{selectedBooking.companyName}</strong></div>}
                       <div><small style={{ color: '#777' }}>Guest Name</small><br/><strong style={{ color: '#fff' }}>{selectedBooking.name}</strong></div>
+                      <div><small style={{ color: '#777' }}>Guest GSTIN</small><br/><strong style={{ color: '#fff' }}>{selectedBooking.guestGstin || 'Unregistered'}</strong></div>
                       <div><small style={{ color: '#777' }}>Mobile</small><br/><strong style={{ color: '#fff' }}>{selectedBooking.mobile}</strong></div>
                       <div><small style={{ color: '#777' }}>Total Guests</small><br/><strong style={{ color: '#fff' }}>{selectedBooking.guests}</strong></div>
                       <div style={{ gridColumn: '1 / -1' }}><small style={{ color: '#777' }}>Address</small><br/><strong style={{ color: '#ccc' }}>{selectedBooking.address}</strong></div>
                       <div style={{ gridColumn: '1 / -1' }}><small style={{ color: '#777' }}>Room</small><br/><strong style={{ color: '#d4af37' }}>{selectedBooking.room}</strong></div>
+                      <div><small style={{ color: '#777' }}>Total Rooms</small><br/><strong style={{ color: '#fff' }}>{selectedBooking.roomCount || 1}</strong></div>
                       <div><small style={{ color: '#777' }}>Check-In</small><br/><strong style={{ color: '#fff' }}>{selectedBooking.checkIn}</strong></div>
                       <div><small style={{ color: '#777' }}>Check-Out</small><br/><strong style={{ color: '#fff' }}>{selectedBooking.actualCheckOut || selectedBooking.checkOut}</strong></div>
                     </div>
@@ -848,60 +1134,201 @@ function Admin() {
               )}
 
               {viewModal === 'bill' && (
-                <div className="invoice-container" id="printable-invoice">
-                  <div className="invoice-header">
-                    <img src="/logo.png" alt="Viswa Hotel" />
-                    <div>
-                      <h1>VISWA HOTEL & RESORTS</h1>
-                      <p>30, Zone-II, Maharana Pratap Nagar, Bhopal<br/>Phone: +91 93017 83278</p>
-                    </div>
-                  </div>
-                  <div className="invoice-title">GUEST INVOICE</div>
-                  
-                  <div className="invoice-details">
-                    <div>
-                      <strong>Billed To:</strong><br/>
-                      {selectedBooking.name}<br/>
-                      Phone: {selectedBooking.mobile}<br/>
-                      Address: {selectedBooking.address}
+                <div className="invoice-container" id="printable-invoice" style={{ background: '#fff', color: '#000', padding: '40px', borderRadius: '8px', maxWidth: '850px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
+                  <div style={{ textAlign: 'right', fontSize: '0.75rem', fontWeight: 'bold', color: '#555', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Original For Recipient</div>
+                  {/* Header Section */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #333', paddingBottom: '20px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                      <img src="/logo.png" alt="Viswa Hotel" style={{ width: '85px', height: '85px', objectFit: 'contain' }} />
+                      <div>
+                        <h1 style={{ margin: 0, fontSize: '1.8rem', color: '#111', fontFamily: 'Georgia, serif', textTransform: 'uppercase', letterSpacing: '1px' }}>VISWA HOTEL & RESORTS</h1>
+                        <p style={{ margin: '2px 0 6px 0', fontSize: '0.75rem', color: '#333', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>(Owned & Operated by Garud Stacks Pvt. Ltd.)</p>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#555', lineHeight: '1.5' }}>
+                          <strong>GSTIN:</strong> 23AAMC7637E1ZJ | 
+                        </p>
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <strong>Invoice No:</strong> {selectedBooking.id.replace('VSW', 'INV')}<br/>
-                      <strong>Date:</strong> {new Date().toLocaleDateString('en-GB')}<br/>
-                      <strong>Status:</strong> {selectedBooking.actualCheckOut ? 'Paid & Closed' : 'Active Stay'}
+                      <h2 style={{ margin: 0, fontSize: '2rem', color: '#d4af37', textTransform: 'uppercase', letterSpacing: '2px' }}>TAX INVOICE</h2>
+                      <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: '#444' }}>
+                        <strong>Invoice No:</strong> {selectedBooking.id.replace('VSW', 'INV-2026')}<br/>
+                        <strong>Date:</strong> {new Date().toLocaleDateString('en-GB')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Guest & Booking Info */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
+                    <div style={{ width: '48%' }}>
+                      <h3 style={{ fontSize: '1rem', borderBottom: '1px solid #ddd', paddingBottom: '5px', margin: '0 0 10px 0', color: '#333' }}>BILLED TO:</h3>
+                      <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.6', color: '#222' }}>
+                        {selectedBooking.companyName ? (
+                          <>
+                            <strong style={{ fontSize: '1.1rem', color: '#111', textTransform: 'uppercase' }}>{selectedBooking.companyName}</strong><br/>
+                            <span style={{ color: '#555' }}>Attn: {selectedBooking.name}</span><br/>
+                          </>
+                        ) : (
+                          <>
+                            <strong>{selectedBooking.name}</strong><br/>
+                          </>
+                        )}
+                        Phone: {selectedBooking.mobile}<br/>
+                        Address: {selectedBooking.address || 'N/A'}<br/>
+                        <span style={{ color: '#333', fontWeight: 'bold', display: 'inline-block', marginTop: '3px' }}>Guest GSTIN: {selectedBooking.guestGstin || 'URV (Unregistered)'}</span>
+                      </p>
+                    </div>
+                    <div style={{ width: '48%' }}>
+                      <h3 style={{ fontSize: '1rem', borderBottom: '1px solid #ddd', paddingBottom: '5px', margin: '0 0 10px 0', color: '#333' }}>STAY DETAILS:</h3>
+                      <table style={{ width: '100%', fontSize: '0.9rem', lineHeight: '1.6', color: '#222' }}>
+                        <tbody>
+                          <tr><td style={{ width: '40%' }}><strong>Booking ID:</strong></td><td>{selectedBooking.id}</td></tr>
+                          <tr><td><strong>Room Details:</strong></td><td>{selectedBooking.room}</td></tr>
+                          <tr><td><strong>Total Rooms:</strong></td><td>{selectedBooking.roomCount || 1}</td></tr>
+                          <tr><td><strong>Check-In:</strong></td><td>{selectedBooking.checkIn}</td></tr>
+                          <tr><td><strong>Check-Out:</strong></td><td>{selectedBooking.actualCheckOut || selectedBooking.checkOut}</td></tr>
+                          <tr><td><strong>Total Guests:</strong></td><td>{selectedBooking.guests} Person(s)</td></tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
-                  <table className="invoice-table">
+                  {/* Itemized Services Table */}
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
                     <thead>
-                      <tr>
-                        <th>Description</th>
-                        <th>Guests</th>
-                        <th>Dates</th>
-                        <th style={{ textAlign: 'right' }}>Amount</th>
+                      <tr style={{ backgroundColor: '#f4f4f4', color: '#333', textAlign: 'left', borderTop: '2px solid #333', borderBottom: '2px solid #333' }}>
+                        <th style={{ padding: '12px', fontSize: '0.9rem' }}>#</th>
+                        <th style={{ padding: '12px', fontSize: '0.9rem' }}>Description of Services</th>
+                        <th style={{ padding: '12px', fontSize: '0.9rem', textAlign: 'center' }}>HSN / SAC</th>
+                        <th style={{ padding: '12px', fontSize: '0.9rem', textAlign: 'center' }}>Qty</th>
+                        <th style={{ padding: '12px', fontSize: '0.9rem', textAlign: 'right' }}>Amount (INR)</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td>{selectedBooking.room} Room Charges</td>
-                        <td>{selectedBooking.guests}</td>
-                        <td>{selectedBooking.checkIn} to {selectedBooking.checkOut}</td>
-                        <td style={{ textAlign: 'right' }}>₹{selectedBooking.totalAmount}</td>
+                      <tr style={{ borderBottom: '1px solid #ddd' }}>
+                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222' }}>1</td>
+                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222' }}>Accommodation Services - {selectedBooking.room}</td>
+                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'center' }}>996311</td>
+                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'center' }}>{selectedBooking.roomCount || 1}</td>
+                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'right' }}>{((Number(selectedBooking.totalAmount) || 0) / 1.12).toFixed(2)}</td>
                       </tr>
                     </tbody>
                   </table>
 
-                  <div className="invoice-totals">
-                    <p>Subtotal: <span>₹{selectedBooking.totalAmount}</span></p>
-                    <p>Advance Paid: <span style={{ color: 'green' }}>- ₹{selectedBooking.advance}</span></p>
-                    <h3>Total Due: <span>₹{Math.max(0, selectedBooking.totalAmount - selectedBooking.advance)}</span></h3>
-                    <small>Payment Method: {selectedBooking.paymentMethod}</small>
+                  {/* Totals & UPI QR Code Section */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'flex-end' }}>
+                    <div style={{ width: '55%', textAlign: 'left' }}>
+                      {Math.max(0, Number(selectedBooking.totalAmount) - Number(selectedBooking.advance)) > 0 ? (
+                        <div style={{ padding: '15px 20px', border: '1px solid #e0e0e0', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '25px', background: '#fcfcfc', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <p style={{ margin: '0 0 10px 0', fontSize: '0.75rem', fontWeight: 'bold', color: '#333', textTransform: 'uppercase', letterSpacing: '1px' }}>Scan & Pay</p>
+                            <div style={{ background: '#fff', padding: '6px', borderRadius: '8px', border: '1px solid #eee', display: 'inline-block' }}>
+                              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`upi://pay?pa=paytm.s2e65rl@pty&pn=Viswa%20Hotel&am=${Math.max(0, Number(selectedBooking.totalAmount) - Number(selectedBooking.advance)).toFixed(2)}&cu=INR`)}`} alt="UPI QR Code" style={{ width: '85px', height: '85px', display: 'block', margin: '0 auto' }} />
+                            </div>
+                            <p style={{ margin: '8px 0 0 0', fontSize: '0.7rem', color: '#666', fontFamily: 'monospace', fontWeight: 'bold' }}>paytm.s2e65rl@pty</p>
+                          </div>
+                          <div style={{ borderLeft: '1px dashed #ccc', paddingLeft: '25px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <p style={{ margin: '0 0 12px 0', fontSize: '0.8rem', color: '#111', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Bank Transfer Details</p>
+                            <table style={{ fontSize: '0.8rem', color: '#333', borderCollapse: 'collapse', textAlign: 'left' }}>
+                              <tbody>
+                                <tr><td style={{ padding: '0 15px 6px 0', color: '#777' }}>Bank:</td><td style={{ padding: '0 0 6px 0' }}><strong>HDFC Bank Ltd.</strong></td></tr>
+                                <tr><td style={{ padding: '0 15px 6px 0', color: '#777' }}>A/C Name:</td><td style={{ padding: '0 0 6px 0' }}><strong>Garud Stacks Pvt. Ltd.</strong></td></tr>
+                                <tr><td style={{ padding: '0 15px 6px 0', color: '#777' }}>A/C No:</td><td style={{ padding: '0 0 6px 0', fontFamily: 'monospace', fontSize: '0.9rem' }}><strong>50200012345678</strong></td></tr>
+                                <tr><td style={{ padding: '0 15px 0 0', color: '#777' }}>IFSC Code:</td><td style={{ padding: 0, fontFamily: 'monospace', fontSize: '0.9rem' }}><strong>HDFC0001234</strong></td></tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ padding: '15px 25px', border: '2px solid #27ae60', borderRadius: '12px', display: 'inline-block', background: 'rgba(39, 174, 96, 0.05)' }}>
+                          <h3 style={{ margin: 0, color: '#27ae60', fontSize: '1.4rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Fully Paid ✅</h3>
+                          <p style={{ margin: '5px 0 0 0', fontSize: '0.85rem', color: '#444' }}>Thank you for your visit!</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ width: '42%' }}>
+                      <table style={{ width: '100%', fontSize: '0.95rem', color: '#222' }}>
+                        <tbody>
+                          <tr>
+                            <td style={{ padding: '6px', textAlign: 'right' }}><strong>Taxable Amount:</strong></td>
+                            <td style={{ padding: '6px', textAlign: 'right', width: '140px' }}>₹{((Number(selectedBooking.totalAmount) || 0) / 1.12).toFixed(2)}</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '6px', textAlign: 'right' }}><strong>CGST @ 6%:</strong></td>
+                            <td style={{ padding: '6px', textAlign: 'right' }}>₹{(((Number(selectedBooking.totalAmount) || 0) - (Number(selectedBooking.totalAmount) || 0) / 1.12) / 2).toFixed(2)}</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '6px', textAlign: 'right', borderBottom: '2px solid #333' }}><strong>SGST @ 6%:</strong></td>
+                            <td style={{ padding: '6px', textAlign: 'right', borderBottom: '2px solid #333' }}>₹{(((Number(selectedBooking.totalAmount) || 0) - (Number(selectedBooking.totalAmount) || 0) / 1.12) / 2).toFixed(2)}</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '10px 8px', textAlign: 'right', fontSize: '1.1rem' }}><strong>Grand Total:</strong></td>
+                            <td style={{ padding: '10px 8px', textAlign: 'right', fontSize: '1.1rem' }}><strong>₹{Number(selectedBooking.totalAmount).toFixed(2)}</strong></td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: '8px', textAlign: 'right', color: '#27ae60', borderBottom: '2px solid #333' }}>Advance Paid ({selectedBooking.paymentMethod}):</td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: '#27ae60', borderBottom: '2px solid #333', fontSize: '1.05rem' }}>- ₹{Number(selectedBooking.advance).toFixed(2)}</td>
+                          </tr>
+                          <tr style={{ backgroundColor: '#f9f9f9' }}>
+                            <td style={{ padding: '15px 8px', textAlign: 'right', fontSize: '1.3rem', textTransform: 'uppercase' }}><strong>Balance Due:</strong></td>
+                            <td style={{ padding: '15px 8px', textAlign: 'right', fontSize: '1.3rem', color: (Number(selectedBooking.totalAmount) - Number(selectedBooking.advance)) > 0 ? '#e74c3c' : '#27ae60' }}>
+                              <strong>₹{Math.max(0, Number(selectedBooking.totalAmount) - Number(selectedBooking.advance)).toFixed(2)}</strong>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
-                  <div style={{ textAlign: 'center', marginTop: '40px', color: '#666', borderTop: '1px solid #ddd', paddingTop: '20px' }}>
-                    <p>Thank you for choosing Viswa Hotel & Resorts.</p>
-                    <button className="print-btn" onClick={() => window.print()}>🖨️ Print Invoice</button>
+                  {/* Address, Footer Terms & Digital Signature */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '2px solid #333', paddingTop: '20px' }}>
+                    <div style={{ width: '65%', fontSize: '0.75rem', color: '#444', lineHeight: '1.6' }}>
+                      <strong style={{ fontSize: '0.85rem', color: '#111' }}>Hotel Address & Contact:</strong><br/>
+                      30, Zone-II, Maharana Pratap Nagar, Bhopal, MP - 462011<br/>
+                      📞 +91 93017 83278 | ✉️ visawah401@gmail.com<br/><br/>
+                      <strong>Terms & Conditions:</strong><br/>
+                      1. Payment is due upon receipt. Late payments may attract interest.<br/>
+                      2. Reverse Charge Mechanism (RCM) is not applicable.<br/>
+                      3. All disputes are subject to Bhopal jurisdiction.<br/>
+                      4. This is a computer-generated tax invoice and does not require a physical signature.
+                    </div>
+                    <div style={{ textAlign: 'center', width: '30%' }}>
+                      <div style={{ borderBottom: '1px solid #333', height: '40px', marginBottom: '5px' }}>
+                        <span style={{ fontFamily: '"Brush Script MT", "Lucida Handwriting", cursive', fontSize: '1.8rem', color: '#111', fontStyle: 'italic', paddingRight: '10px' }}>P. Garud</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#333', fontWeight: 'bold', textTransform: 'uppercase' }}>Authorized Signatory</p>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '0.65rem', color: '#666', textTransform: 'uppercase' }}>For Garud Stacks Pvt. Ltd.</p>
+                    </div>
                   </div>
+
+                  {/* Print & Share Action Buttons */}
+                  <div style={{ textAlign: 'center', marginTop: '40px' }} className="no-print-action">
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                      <button onClick={() => window.print()} style={{ background: '#2ecc71', color: '#fff', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(46, 204, 113, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        🖨️ Print Legal Invoice
+                      </button>
+                      <a href={`https://wa.me/${selectedBooking.mobile ? (selectedBooking.mobile.replace(/\D/g, '').length === 10 ? '91' + selectedBooking.mobile.replace(/\D/g, '') : selectedBooking.mobile.replace(/\D/g, '')) : ''}?text=${encodeURIComponent(`*INVOICE - VISWA HOTEL & RESORTS*\n-----------------------------------\n*Invoice No:* ${selectedBooking.id.replace('VSW', 'INV-2026')}\n*Guest:* ${selectedBooking.companyName ? selectedBooking.companyName + ' (' + selectedBooking.name + ')' : selectedBooking.name}\n*Rooms Booked:* ${selectedBooking.roomCount || 1} (${selectedBooking.room})\n\n*Total Amount:* ₹${Number(selectedBooking.totalAmount).toFixed(2)}\n*Advance Paid:* ₹${Number(selectedBooking.advance).toFixed(2)}\n*Balance Due:* ₹${Math.max(0, Number(selectedBooking.totalAmount) - Number(selectedBooking.advance)).toFixed(2)}\n\nThank you for choosing Viswa Hotel & Resorts!`)}`} target="_blank" rel="noreferrer" style={{ background: '#25D366', color: '#fff', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(37, 211, 102, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        Share on WhatsApp
+                      </a>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '12px' }}>Tip: Use A4 Paper size and check "Background graphics" in print settings.</p>
+                  </div>
+
+                  {/* CSS specific for printing perfectly on A4 */}
+                  <style>
+                    {`
+                      @media print {
+                        body * { visibility: hidden; }
+                        #printable-invoice, #printable-invoice * { visibility: visible; }
+                        #printable-invoice { position: absolute; left: 0; top: 0; width: 100%; max-width: 100%; margin: 0; padding: 20px; box-shadow: none; border: none; }
+                        .no-print-action { display: none !important; }
+                        .close-modal { display: none !important; }
+                        .admin-modal { background: none !important; border: none !important; box-shadow: none !important; overflow: visible !important; }
+                        .admin-modal-overlay { background: none !important; overflow: visible !important; align-items: flex-start; padding: 0; }
+                      }
+                    `}
+                  </style>
                 </div>
               )}
             </div>

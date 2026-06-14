@@ -120,7 +120,7 @@ function GuestPortal() {
     {
       icon: <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>,
       title: 'In-Room Dining',
-      image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80',
       desc: 'Choose from our premium restaurants and cafes. Food delivered directly to your room.',
       providers: [
         { name: 'Viswa Grand Restaurant', desc: 'Multi-cuisine fine dining (Indian, Chinese, Continental)', phone: '+919301783278', action: 'Order Lunch/Dinner' },
@@ -144,7 +144,7 @@ function GuestPortal() {
     {
       icon: <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
       title: 'Medical Emergency',
-      image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80',
       desc: 'Top hospitals and clinics near Viswa Hotel for any immediate medical emergency.',
       providers: [
         { name: 'City Care Hospital', desc: '24/7 Multi-speciality hospital (2 km away)', phone: '108', action: 'Call Ambulance' },
@@ -156,7 +156,7 @@ function GuestPortal() {
     {
       icon: <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>,
       title: 'Pharmacy & Essentials',
-      image: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
       desc: 'Nearby shops and pharmacies for medicines and your daily essentials.',
       providers: [
         { name: 'Viswa 24/7 Pharmacy', desc: 'All general medicines available (Ground Floor)', phone: '+919000055555', action: 'Order Medicine' },
@@ -168,7 +168,7 @@ function GuestPortal() {
     {
       icon: <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="8" rx="2" ry="2"></rect><circle cx="7" cy="19" r="2"></circle><circle cx="17" cy="19" r="2"></circle><path d="M3 11l2-5h14l2 5"></path></svg>,
       title: 'Travel & Cab Desk',
-      image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=1200&q=80',
       desc: 'Explore the City of Lakes or book a comfortable drop to your next destination.',
       providers: [
         { name: 'Uber / Ola Booking', desc: 'Direct pickup from hotel lobby', phone: '+918962069176', action: 'Request Cab' },
@@ -180,7 +180,7 @@ function GuestPortal() {
     {
       icon: <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>,
       title: 'Free VIP WiFi',
-      image: 'https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
       desc: 'Connect to our high-speed premium internet networks for uninterrupted browsing.',
       providers: [
         { name: 'Network: Viswa_VIP_5G', desc: 'For ultra-fast streaming and meetings. (Pass: vip@viswa)', phone: '#', action: 'Connect 5G' },

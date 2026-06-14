@@ -58,7 +58,7 @@ function App() {
             </ul>
 
             <div className="nav-actions">
-              <a href="tel:+919876543210" className="phone-pill">+91 98765 43210</a>
+              <a href="tel:+919301783278" className="phone-pill">+91 93017 83278</a>
               {isLoggedIn && <button onClick={handleLogout} className="btn-logout">Logout</button>}
               <button
                 className={`menu-toggle ${isNavOpen ? 'open' : ''}`}
