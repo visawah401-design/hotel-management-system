@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://aapka-railway-url.up.railway.app/api/$1"
+      "destination": "https://hotel-management-system-production-c4ba.up.railway.app/api/$1"
     }
   ]
 }

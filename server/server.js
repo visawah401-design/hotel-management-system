@@ -33,6 +33,11 @@ app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/facilities', require('./routes/facilities'));
 
+// Root Route
+app.get('/', (req, res) => {
+  res.send('Hotel Management API Running');
+});
+
 // Health Check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running', timestamp: new Date() });
