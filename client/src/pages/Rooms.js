@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './Rooms.css';
 import RoomCard from '../components/RoomCard';
@@ -120,7 +120,7 @@ function Rooms({ isLoggedIn }) {
         }
       }
     }
-  }, [bookingData.checkInDate, bookingData.durationValue, bookingData.durationUnit]);
+  }, [bookingData.checkInDate, bookingData.durationValue, bookingData.durationUnit, bookingData.checkOutDate]);
 
   useEffect(() => {
     fetchRooms();
@@ -133,9 +133,9 @@ function Rooms({ isLoggedIn }) {
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [fetchRooms]);
 
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     try {
       const response = await axios.get('/api/rooms');
       
@@ -228,7 +228,7 @@ function Rooms({ isLoggedIn }) {
       setRooms(allRooms);
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleMultiBookingSubmit = (e) => {
     e.preventDefault();
