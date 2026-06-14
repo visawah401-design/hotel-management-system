@@ -122,19 +122,6 @@ function Rooms({ isLoggedIn }) {
     }
   }, [bookingData.checkInDate, bookingData.durationValue, bookingData.durationUnit, bookingData.checkOutDate]);
 
-  useEffect(() => {
-    fetchRooms();
-
-    // Real-time tab sync: Agar admin kisi room ko update karta hai, toh auto-refresh bina page load ke hoga
-    const handleStorageChange = (e) => {
-      if (e.key === 'vip_bookings') {
-        fetchRooms();
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [fetchRooms]);
-
   const fetchRooms = useCallback(async () => {
     try {
       const response = await axios.get('/api/rooms');
@@ -229,6 +216,19 @@ function Rooms({ isLoggedIn }) {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchRooms();
+
+    // Real-time tab sync: Agar admin kisi room ko update karta hai, toh auto-refresh bina page load ke hoga
+    const handleStorageChange = (e) => {
+      if (e.key === 'vip_bookings') {
+        fetchRooms();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [fetchRooms]);
 
   const handleMultiBookingSubmit = (e) => {
     e.preventDefault();
