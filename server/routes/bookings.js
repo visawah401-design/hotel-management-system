@@ -1,37 +1,32 @@
 const express = require('express');
 const Booking = require('../models/Booking');
 const Room = require('../models/Room');
+const auth = require('../middleware/auth'); // Assuming you have auth middleware
 
 const router = express.Router();
 
 // Create Booking
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => { // Now protected, even for guests, to get userId
   try {
-    const { userId, roomId, checkInDate, checkOutDate, numberOfGuests, specialRequests } = req.body;
+    // More fields from the frontend form
+    const {
+      name, mobile, address, room, roomType, roomNumbers, roomRate, roomCount,
+      checkIn, checkOut, rawCheckIn, rawCheckOut, guests, totalAmount,
+      advance, paymentMethod, status, actualCheckIn, photo, companyName, guestGstin,
+      paymentStatus, razorpayPaymentId, nights,
+    } = req.body;
 
-    const room = await Room.findById(roomId);
-    if (!room) {
-      return res.status(404).json({ message: 'Room not found' });
-    }
-
-    const days = Math.ceil((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24));
-    const totalPrice = room.pricePerNight * days;
+    const newId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
 
     const booking = new Booking({
-      bookingId: `BOOK${Date.now()}`,
-      userId,
-      roomId,
-      checkInDate,
-      checkOutDate,
-      numberOfGuests,
-      totalPrice,
-      specialRequests,
+      id: newId, // Using the same ID format as localStorage
+      name, mobile, address, room, roomType, roomNumbers, roomRate, roomCount,
+      checkIn, checkOut, rawCheckIn, rawCheckOut, guests, totalAmount,
+      advance, paymentMethod, status, actualCheckIn, photo, companyName, guestGstin, userId: req.user?.id, // Link booking to user if logged in
+      paymentStatus, razorpayPaymentId, nights
     });
 
     const newBooking = await booking.save();
-    
-    // Update room status
-    await Room.findByIdAndUpdate(roomId, { status: 'Occupied' });
 
     res.status(201).json(newBooking);
   } catch (error) {
@@ -40,11 +35,20 @@ router.post('/', async (req, res) => {
 });
 
 // Get All Bookings
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => { // Now protected for admins
   try {
-    const bookings = await Booking.find()
-      .populate('userId', 'name email phone')
-      .populate('roomId', 'roomNumber roomType');
+    const bookings = await Booking.find().sort({ createdAt: -1 }); // Sort by creation date
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get public booking availability (dates and room numbers only)
+router.get('/availability', async (req, res) => {
+  try {
+    // Only return non-sensitive data needed for conflict checking on the frontend
+    const bookings = await Booking.find({ status: { $in: ['Pending', 'Checked-In'] } }).select('roomNumbers rawCheckIn rawCheckOut');
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -52,7 +56,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get User Bookings
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', auth, async (req, res) => { // Protected
   try {
     const bookings = await Booking.find({ userId: req.params.userId })
       .populate('roomId');
@@ -63,11 +67,9 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // Get Booking by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res) => { // Public for guest portal access
   try {
-    const booking = await Booking.findById(req.params.id)
-      .populate('userId')
-      .populate('roomId');
+    const booking = await Booking.findOne({ id: req.params.id }); // Find by custom VSW- ID
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
@@ -78,9 +80,9 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update Booking
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => { // Protected
   try {
-    const booking = await Booking.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const booking = await Booking.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
@@ -91,9 +93,13 @@ router.put('/:id', async (req, res) => {
 });
 
 // Check-in
-router.put('/:id/checkin', async (req, res) => {
+router.put('/:id/checkin', auth, async (req, res) => { // Protected
   try {
-    const booking = await Booking.findByIdAndUpdate(req.params.id, { status: 'Checked-In' }, { new: true });
+    const { actualCheckIn } = req.body;
+    const booking = await Booking.findOneAndUpdate({ id: req.params.id }, { status: 'Checked-In', actualCheckIn }, { new: true });
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
     res.json(booking);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -101,14 +107,13 @@ router.put('/:id/checkin', async (req, res) => {
 });
 
 // Check-out
-router.put('/:id/checkout', async (req, res) => {
+router.put('/:id/checkout', auth, async (req, res) => { // Protected
   try {
-    const booking = await Booking.findByIdAndUpdate(req.params.id, { status: 'Checked-Out' }, { new: true });
-    
-    // Update room status
-    const booking_data = await Booking.findById(req.params.id);
-    await Room.findByIdAndUpdate(booking_data.roomId, { status: 'Available' });
-
+    const { actualCheckOut } = req.body;
+    const booking = await Booking.findOneAndUpdate({ id: req.params.id }, { status: 'Checked-Out', actualCheckOut }, { new: true });
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
     res.json(booking);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -116,14 +121,13 @@ router.put('/:id/checkout', async (req, res) => {
 });
 
 // Cancel Booking
-router.put('/:id/cancel', async (req, res) => {
+router.put('/:id/cancel', auth, async (req, res) => { // Protected
   try {
-    const booking = await Booking.findByIdAndUpdate(req.params.id, { status: 'Cancelled' }, { new: true });
-    
-    // Update room status
-    const booking_data = await Booking.findById(req.params.id);
-    await Room.findByIdAndUpdate(booking_data.roomId, { status: 'Available' });
-
+    const { reason, auditTime } = req.body;
+    const booking = await Booking.findOneAndUpdate({ id: req.params.id }, { status: 'Cancelled', archived: true, cancelledAt: auditTime, cancelledBy: 'Super Admin', cancelReason: reason }, { new: true });
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
     res.json(booking);
   } catch (error) {
     res.status(500).json({ message: error.message });

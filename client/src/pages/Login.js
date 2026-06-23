@@ -54,51 +54,34 @@ function Login({ setIsLoggedIn, setUserRole }) {
     e.preventDefault();
     setLoading(true);
 
-    // VIP Admin Direct Login
-    if (formData.email === 'admin' && formData.password === '55555') {
-      localStorage.setItem('token', 'admin-token');
-      localStorage.setItem('userId', 'admin');
-      localStorage.setItem('role', 'admin');
-      setIsLoggedIn(true);
-      setUserRole('admin');
-      setLoading(false);
-      navigate('/admin'); // Direct Admin Dashboard par bheje
-      return;
-    }
-
-    // Super Admin (Sadmin) Direct Login
-    if (formData.email === 'sadmin' && formData.password === '66666') {
-      localStorage.setItem('token', 'sadmin-token');
-      localStorage.setItem('userId', 'sadmin');
-      localStorage.setItem('role', 'sadmin');
-      setIsLoggedIn(true);
-      setUserRole('sadmin');
-      setLoading(false);
-      navigate('/admin'); // Direct Admin Dashboard par bheje
-      return;
-    }
-
-    // VIP Guest Direct Login (Agar password 123456 hai toh bina error ke portal par le jayega)
-    if (formData.password === '123456') {
-      localStorage.setItem('token', 'vip-guest-token');
-      localStorage.setItem('userId', formData.email); // Certificate ID email field me hai
-      localStorage.setItem('role', 'user');
-      setIsLoggedIn(true);
-      setUserRole('user');
-      setLoading(false);
-      navigate('/portal'); // Direct VIP Dashboard/Portal par bheje
-      return;
-    }
-
     try {
+      // Check for Guest Portal login first (by ID format)
+      if (formData.email.toUpperCase().startsWith('VSW-')) {
+        const response = await axios.get(`/api/bookings/${formData.email.toUpperCase()}`);
+        if (response.data) {
+          localStorage.setItem('token', 'vip-guest-token');
+          localStorage.setItem('userId', response.data.id);
+          localStorage.setItem('role', 'user');
+          setIsLoggedIn(true);
+          setUserRole('user');
+          navigate('/portal');
+          return;
+        }
+      }
+
+      // Standard User/Admin login
       const response = await axios.post('/api/users/login', formData);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('userId', response.data.user.id);
       localStorage.setItem('role', response.data.user.role);
       setIsLoggedIn(true);
       setUserRole(response.data.user.role);
-      alert('Login successful!');
-      navigate('/');
+      
+      if (response.data.user.role === 'admin' || response.data.user.role === 'sadmin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       alert(error.response?.data?.message || 'Login failed');
     } finally {

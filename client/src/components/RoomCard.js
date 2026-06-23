@@ -41,7 +41,7 @@ function RoomCard({ room, onBook, isLoggedIn }) {
         onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1582719478250-c89af14cf758?auto=format&fit=crop&w=800&q=80'; }}
       />
       <div className="room-info">
-        <h3>{room.roomType} - Room {room.roomNumber}</h3>
+        <h3>{room.roomType}</h3>
         
         {room.status !== 'Available' && room.bookedFrom && room.bookedTo && (
           <div style={{ background: 'rgba(231, 76, 60, 0.05)', borderLeft: '3px solid #e74c3c', padding: '10px 12px', margin: '10px 0', borderRadius: '4px' }}>

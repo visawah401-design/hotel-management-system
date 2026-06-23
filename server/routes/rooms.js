@@ -1,5 +1,6 @@
 const express = require('express');
 const Room = require('../models/Room');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -24,7 +25,7 @@ router.get('/available', async (req, res) => {
 });
 
 // Create Room (Admin only)
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   const room = new Room(req.body);
   try {
     const newRoom = await room.save();
@@ -35,7 +36,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update Room
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
     const room = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!room) {
@@ -48,7 +49,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete Room
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const room = await Room.findByIdAndDelete(req.params.id);
     if (!room) {

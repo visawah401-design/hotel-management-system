@@ -1,23 +1,56 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import './Admin.css';
 
+const toLocalDateTimeInput = (date) => {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+};
+
+const addDays = (date, days) => {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+};
+
 function Admin() {
+  const defaultCheckIn = toLocalDateTimeInput(new Date());
+  const defaultCheckOut = toLocalDateTimeInput(addDays(new Date(), 1));
   const queryParams = new URLSearchParams(window.location.search);
   const defaultTab = queryParams.get('tab') || (localStorage.getItem('role') === 'sadmin' ? 'analytics' : 'dashboard');
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
   const [viewModal, setViewModal] = useState(null); // 'details' or 'bill'
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [cardDetailsModal, setCardDetailsModal] = useState(null); // 'occupancy', 'staff', 'bookings', 'available', 'checkout', 'active-staff'
 
   // New Manual Bill State
   const [customBill, setCustomBill] = useState({
-    name: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 1, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 1, totalAmount: '', advance: '', paymentMethod: 'Cash'
+    name: '', mobile: '', address: '', guestGstin: '', roomType: 'Standard Room', roomNumbers: [], roomRate: '', checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 1, advance: '', paymentMethod: 'Cash'
   });
 
   // New Multi Booking State
   const [multiBookingData, setMultiBookingData] = useState({
-    companyName: '', guestName: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 2, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 2, totalAmount: '', advance: '', paymentMethod: 'Bank Transfer'
+    companyName: '', guestName: '', mobile: '', address: '', guestGstin: '', roomType: 'Standard Room', roomNumbers: [], roomRate: '', checkIn: defaultCheckIn, checkOut: defaultCheckOut, guests: 2, advance: '', paymentMethod: 'Bank Transfer'
+  });
+  const [entryData, setEntryData] = useState({
+    name: '',
+    mobile: '',
+    address: '',
+    roomType: 'Standard Room',
+    roomNumber: '',
+    checkInDate: '',
+    checkOutDate: '',
+    durationValue: 1,
+    durationUnit: 'Days',
+    guests: 1,
+    totalAmount: '',
+    downPayment: '',
+    paymentMethod: 'Cash',
+    photoPreview: null
   });
 
   // Filters ke liye naye states
@@ -26,20 +59,169 @@ function Admin() {
   const [dateTo, setDateTo] = useState('');
 
   // Staff Management State (Local Storage for Persistence)
-  const [staffList, setStaffList] = useState(() => {
-    const savedStaff = localStorage.getItem('hotel_staff');
-    return savedStaff ? JSON.parse(savedStaff) : [
-      { id: 1, staffId: 'EMP-101', name: 'Ramesh', role: 'Housekeeping', shift: '08:00 AM - 04:00 PM', status: 'Present', stats: { P: 22, A: 1, L: 0, H: 1 }, history: { '2026-05-28': 'Present', '2026-05-29': 'Present' } },
-      { id: 2, staffId: 'EMP-102', name: 'Suresh', role: 'Reception', shift: '02:00 PM - 10:00 PM', status: 'Present', stats: { P: 24, A: 0, L: 0, H: 0 }, history: { '2026-05-28': 'Present', '2026-05-29': 'Present' } },
-      { id: 3, staffId: 'EMP-103', name: 'Amit', role: 'Security', shift: '10:00 PM - 06:00 AM', status: 'Absent', stats: { P: 20, A: 3, L: 1, H: 0 }, history: { '2026-05-28': 'Present', '2026-05-29': 'Absent' } },
-      { id: 4, staffId: 'EMP-104', name: 'Priya', role: 'Manager', shift: '09:00 AM - 05:00 PM', status: 'Leave', stats: { P: 21, A: 0, L: 3, H: 0 }, history: { '2026-05-28': 'Leave', '2026-05-29': 'Leave' } }
-    ];
-  });
+  const [staffList, setStaffList] = useState([]);
 
   // Aaj ki date string (YYYY-MM-DD) history save karne ke liye
   const todayStr = new Date().toISOString().split('T')[0];
 
   const currentUserRole = localStorage.getItem('role'); // Sadmin check karne ke liye
+
+  // Helper function to get all room numbers (101-135 for 35 rooms)
+  const allRoomNumbers = Array.from({ length: 35 }, (_, i) => 101 + i);
+
+  // Helper function to get occupied rooms
+  const getOccupiedRooms = () => {
+    const occupied = [];
+    bookings.forEach(b => {
+      const st = b.status || (b.actualCheckOut ? 'Checked-Out' : 'Checked-In');
+      if (st === 'Checked-In' || st === 'Pending') {
+        const rooms = b.roomNumbers || (String(b.room || '').match(/\b\d{3}\b/g) || []);
+        occupied.push(...rooms.map(r => ({ number: String(r), guest: b.name, checkIn: b.checkIn, checkOut: b.checkOut })));
+      }
+    });
+    return occupied;
+  };
+
+  // Helper function to get available rooms
+  const getAvailableRooms = () => {
+    const occupiedNumbers = getOccupiedRooms().map(r => r.number);
+    return allRoomNumbers.filter(room => !occupiedNumbers.includes(String(room))).map(r => String(r));
+  };
+
+  // Helper function to get checked-in guests
+  const getCheckedInGuests = () => {
+    return bookings.filter(b => {
+      const st = b.status || (b.actualCheckOut ? 'Checked-Out' : 'Checked-In');
+      return st === 'Checked-In';
+    });
+  };
+
+  // Razorpay Payment Handler
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const initiateRazorpayPayment = async (bookingData, amount, bookingType) => {
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      alert('Failed to load Razorpay. Please try again.');
+      return;
+    }
+
+    try {
+      // Step 1: Create Razorpay Order
+      const orderRes = await fetch('http://localhost:5000/api/payments/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+      const orderData = await orderRes.json();
+
+      if (!orderData.id) {
+        alert('Failed to create payment order. Please try again.');
+        return;
+      }
+
+      // Step 2: Open Razorpay Checkout
+      const options = {
+        key: 'rzp_test_T17mWs6lrO5aNR', // Your Razorpay Key ID
+        amount: Math.round(amount * 100), // Amount in paise
+        currency: 'INR',
+        name: 'Viswa Hotel & Resorts',
+        description: `Booking ID: ${bookingData.id || 'New Booking'}`,
+        order_id: orderData.id,
+        handler: async (response) => {
+          // Step 3: Verify Payment
+          try {
+            const verifyRes = await fetch('http://localhost:5000/api/payments/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.success) {
+              // Step 4: Save Booking after Payment Success
+              const finalBookingData = { ...bookingData, paymentStatus: 'Completed', razorpayPaymentId: response.razorpay_payment_id };
+
+              // Save to DB via API
+              const savedBookingRes = await axios.post('/api/bookings', finalBookingData);
+              const savedBooking = savedBookingRes.data;
+
+              setBookings(prev => [savedBooking, ...prev]);
+              setSelectedBooking(savedBooking);
+
+              // Reset appropriate form based on booking type
+              if (bookingType === 'multiBooking') {
+                setMultiBookingData({ companyName: '', guestName: '', mobile: '', address: '', guestGstin: '', roomType: 'Standard Room', roomNumbers: [], roomRate: '', checkIn: defaultCheckIn, checkOut: defaultCheckOut, guests: 2, advance: '', paymentMethod: 'Online' });
+              } else if (bookingType === 'customBill') {
+                setCustomBill({ name: '', mobile: '', address: '', guestGstin: '', roomType: 'Standard Room', roomNumbers: [], roomRate: '', checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 1, advance: '', paymentMethod: 'Online' });
+              }
+
+              setViewModal('bill');
+              alert('✅ Payment successful! Booking confirmed.');
+            } else {
+              alert('Payment verification failed. Please contact support.');
+            }
+          } catch (error) {
+            alert('Error verifying payment: ' + error.message);
+          }
+        },
+        prefill: {
+          name: bookingData.name || '',
+          email: bookingData.email || 'guest@hotel.com',
+          contact: bookingData.mobile || ''
+        },
+        theme: {
+          color: '#d4af37'
+        },
+        modal: {
+          ondismiss: () => {
+            alert('Payment cancelled');
+          }
+        }
+      };
+
+      const rzp1 = new window.Razorpay(options);
+      rzp1.open();
+    } catch (error) {
+      alert('Error initiating payment: ' + error.message);
+    }
+  };
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('/api/bookings');
+      setBookings(response.data);
+    } catch (error) {
+      console.error("Failed to fetch bookings:", error);
+      alert('Failed to load booking data from the server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/api/staff', { headers: { 'x-auth-token': token } });
+      setStaffList(res.data);
+    } catch (error) {
+      console.error("Failed to fetch staff:", error);
+      // Don't alert, just log the error
+    }
+  };
 
   useEffect(() => {
     // Admin Dashboard page par aate hi global Navbar aur Footer ko hide karna
@@ -47,26 +229,35 @@ function Admin() {
     const footer = document.querySelector('.footer');
     if (navbar) navbar.style.display = 'none';
     if (footer) footer.style.display = 'none';
-
-    // Sadmin ke liye direct Analytics tab open karne ka logic
-    if (localStorage.getItem('role') === 'sadmin') {
-      setActiveTab('analytics');
-    }
-
-    // Load bookings from VIP Portal LocalStorage logic to show actual dynamic data
-    const localBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-    const bookingsArray = Object.keys(localBookings).map(id => ({
-      id,
-      ...localBookings[id]
-    }));
     
-    setBookings(bookingsArray.reverse()); // Nayi booking upar dikhe
+    fetchBookings();
+    fetchStaff();
 
     return () => {
       if (navbar) navbar.style.display = '';
       if (footer) footer.style.display = '';
     };
   }, []);
+
+  useEffect(() => {
+    if (entryData.checkInDate && entryData.durationValue && entryData.durationUnit) {
+      const start = new Date(entryData.checkInDate);
+      if (!isNaN(start.getTime())) {
+        const end = new Date(start);
+        if (entryData.durationUnit === 'Hours') {
+          end.setHours(end.getHours() + parseInt(entryData.durationValue || 1, 10));
+        } else {
+          end.setDate(end.getDate() + parseInt(entryData.durationValue || 1, 10));
+        }
+
+        const offset = end.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(end - offset)).toISOString().slice(0, 16);
+        if (entryData.checkOutDate !== localISOTime) {
+          setEntryData(prev => ({ ...prev, checkOutDate: localISOTime }));
+        }
+      }
+    }
+  }, [entryData.checkInDate, entryData.durationValue, entryData.durationUnit, entryData.checkOutDate]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -75,74 +266,74 @@ function Admin() {
     window.location.href = '/';
   };
 
-  const handleAdminCheckIn = (id) => {
+  const handleAdminCheckIn = async (id) => {
     if(window.confirm('Are you sure you want to Check-In this guest?')) {
       const now = new Date();
       const currentTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      
-      const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-      if(allBookings[id]) {
-         allBookings[id].status = 'Checked-In';
-         allBookings[id].actualCheckIn = currentTime;
-         localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
-         setBookings(bookings.map(b => b.id === id ? { ...b, status: 'Checked-In', actualCheckIn: currentTime } : b));
+      try {
+        const res = await axios.put(`/api/bookings/${id}/checkin`, { actualCheckIn: currentTime });
+        setBookings(bookings.map(b => b.id === id ? res.data : b));
+      } catch (error) {
+        alert('Failed to check-in guest.');
       }
     }
   };
 
-  const handleAdminCheckOut = (id) => {
+  const handleAdminCheckOut = async (id) => {
     if(window.confirm('Are you sure you want to Check-Out this guest?')) {
       const now = new Date();
       const currentTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      
-      const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-      if(allBookings[id]) {
-         allBookings[id].status = 'Checked-Out';
-         allBookings[id].actualCheckOut = currentTime;
-         localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
-         setBookings(bookings.map(b => b.id === id ? { ...b, status: 'Checked-Out', actualCheckOut: currentTime } : b));
+      try {
+        const res = await axios.put(`/api/bookings/${id}/checkout`, { actualCheckOut: currentTime });
+        setBookings(bookings.map(b => b.id === id ? res.data : b));
+      } catch (error) {
+        alert('Failed to check-out guest.');
       }
     }
   };
 
-  // Deep System Reset Logic: Saara Data hatane ke liye (Nuclear Wipe)
-  const handleResetData = () => {
-    if (window.confirm("⚠️ WARNING: This will delete ALL bookings and make all rooms available again. Are you completely sure?")) {
-      if (window.confirm("Are you REALLY sure? This action cannot be undone!")) {
-        
-        // Auth (Login) details ko save kar lete hain taaki admin logout na ho
-        const token = localStorage.getItem('token');
-        const role = localStorage.getItem('role');
-        const userId = localStorage.getItem('userId');
-        
-        // Poora local storage saaf (Clear everything)
-        localStorage.clear();
-        
-        // Auth wapas set kar do
-        if(token) localStorage.setItem('token', token);
-        if(role) localStorage.setItem('role', role);
-        if(userId) localStorage.setItem('userId', userId);
 
-        alert("All booking data has been permanently cleared. System is refreshing...");
-        window.location.reload();
-      }
+  // Booking record ko preserve karke sirf Super Admin archive/cancel kar sakta hai
+  const handleDeleteBooking = async (id) => {
+    if(currentUserRole !== 'sadmin') {
+      alert('Only Super Admin can cancel/archive booking records.');
+      return;
     }
-  };
 
-  // Booking ko specifically delete karne ka logic
-  const handleDeleteBooking = (id) => {
-    if(window.confirm('Are you sure you want to permanently delete this booking?')) {
-      const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-      delete allBookings[id];
-      localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
-      setBookings(bookings.filter(b => b.id !== id));
+    const reason = window.prompt('Enter cancellation/archive reason for this booking record:');
+    if(reason === null) return;
+    if(!reason.trim()) {
+      alert('Reason is required so the record remains auditable.');
+      return;
+    }
+
+    if(window.confirm('This will keep the booking record and mark it as Cancelled. Continue?')) {
+      const now = new Date();
+      const auditTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      try {
+        const res = await axios.put(`/api/bookings/${id}/cancel`, { reason: reason.trim(), auditTime });
+        setBookings(bookings.map(b => b.id === id ? res.data : b));
+      } catch (error) {
+        alert('Failed to archive booking.');
+      }
     }
   };
 
   // Custom Bill Generate Logic
-  const handleCreateBill = (e) => {
+  const handleCreateBill = async (e) => {
     e.preventDefault();
-    const newId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
+    if (!customBill.roomNumbers.length) {
+      alert('Please select at least one room number.');
+      return;
+    }
+    if (!Number(customBill.roomRate)) {
+      alert('Please enter the rent for one room.');
+      return;
+    }
+    if (new Date(customBill.checkOut) <= new Date(customBill.checkIn)) {
+      alert('Check-out date must be after the check-in date.');
+      return;
+    }
     
     const formatDate = (dateStr) => {
       if (!dateStr) return '';
@@ -151,41 +342,194 @@ function Admin() {
     };
 
     const newBooking = {
-      id: newId,
       name: customBill.name,
       mobile: customBill.mobile,
       address: customBill.address || 'Not provided',
       guestGstin: customBill.guestGstin || '',
-      room: customBill.room,
-      roomCount: customBill.roomCount || 1,
+      room: `${customBill.roomType} (Rooms ${customBill.roomNumbers.join(', ')})`,
+      roomType: customBill.roomType,
+      roomNumbers: customBill.roomNumbers,
+      roomRate: Number(customBill.roomRate) || 0,
+      roomCount: customBill.roomNumbers.length,
+      nights: customBillNightCount,
       checkIn: formatDate(customBill.checkIn),
       checkOut: formatDate(customBill.checkOut),
       rawCheckIn: customBill.checkIn,
       rawCheckOut: customBill.checkOut,
       guests: customBill.guests,
-      totalAmount: customBill.totalAmount,
+      totalAmount: customBillTotalAmount,
       advance: customBill.advance || 0,
       paymentMethod: customBill.paymentMethod,
       status: 'Checked-Out', // Automatically marked as done
       actualCheckOut: new Date().toLocaleDateString('en-GB') + ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     };
 
-    const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-    allBookings[newId] = newBooking;
-    localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
-    
-    setBookings([newBooking, ...bookings]);
-    setSelectedBooking(newBooking);
-    setViewModal('bill');
-    
-    setCustomBill({ name: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 1, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 1, totalAmount: '', advance: '', paymentMethod: 'Cash' });
+    // Check if payment method is Online
+    if (customBill.paymentMethod === 'Online') {
+      // Initiate Razorpay payment
+      initiateRazorpayPayment(newBooking, customBillTotalAmount, 'customBill');
+      return;
+    }
+
+    try {
+      const res = await axios.post('/api/bookings', newBooking);
+      const savedBooking = res.data;
+      setBookings([savedBooking, ...bookings]);
+      setSelectedBooking(savedBooking);
+      setViewModal('bill');
+    } catch (error) {
+      alert('Failed to create bill: ' + (error.response?.data?.message || error.message));
+    }
+
+    setCustomBill({ name: '', mobile: '', address: '', guestGstin: '', roomType: 'Standard Room', roomNumbers: [], roomRate: '', checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 1, advance: '', paymentMethod: 'Cash' });
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSidebarOpen(false);
+  };
+
+  const handleEntryPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEntryData(prev => ({ ...prev, photoPreview: URL.createObjectURL(file) }));
+    }
+  };
+
+  const handleEntrySubmit = async (e) => {
+    e.preventDefault();
+
+    if (!entryData.roomNumber) {
+      alert('Please select an available room number.');
+      return;
+    }
+
+    const reqStart = new Date(entryData.checkInDate);
+    const reqEnd = new Date(entryData.checkOutDate);
+    if (reqEnd <= reqStart) {
+      alert('Error: Check-out time must be after the check-in time!');
+      return;
+    }
+
+    const roomDetails = `${entryData.roomType} (Room ${entryData.roomNumber})`;
+    const hasConflict = bookings.some(b => {
+      const st = b.status || (b.actualCheckOut ? 'Checked-Out' : 'Checked-In');
+      if (st === 'Checked-Out' || st === 'Cancelled') return false;
+      const bookedRoomNumbers = b.roomNumbers || (String(b.room || '').match(/\b\d{3}\b/g) || []);
+      const sameRoomNumber = bookedRoomNumbers.map(String).includes(String(entryData.roomNumber));
+      if (!sameRoomNumber && b.room !== roomDetails) return false;
+
+      const exStart = new Date(b.rawCheckIn);
+      const exEnd = new Date(b.rawCheckOut);
+      return reqStart < exEnd && reqEnd > exStart;
+    });
+
+    if (hasConflict) {
+      alert('This room already has an active booking for the selected date and time.');
+      return;
+    }
+
+    const formatDt = (dt) => {
+      if (!dt) return '';
+      const d = new Date(dt);
+      return isNaN(d.getTime()) ? dt : d.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true});
+    };
+
+    const now = new Date();
+    const currentTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const newBooking = {
+      name: entryData.name,
+      mobile: entryData.mobile,
+      address: entryData.address || 'Not provided',
+      room: roomDetails,
+      roomCount: 1,
+      photo: entryData.photoPreview || '',
+      checkIn: formatDt(entryData.checkInDate),
+      checkOut: formatDt(entryData.checkOutDate),
+      rawCheckIn: entryData.checkInDate,
+      rawCheckOut: entryData.checkOutDate,
+      guests: entryData.guests,
+      totalAmount: Number(entryData.totalAmount) || 0,
+      advance: Number(entryData.downPayment) || 0,
+      paymentMethod: entryData.paymentMethod,
+      status: 'Checked-In',
+      actualCheckIn: currentTime,
+      actualCheckOut: null
+    };
+
+    // Check if payment method is Online
+    if (entryData.paymentMethod === 'Online') {
+      // Initiate Razorpay payment
+      initiateRazorpayPayment(newBooking, newBooking.totalAmount, 'guestEntry');
+      return;
+    }
+
+    try {
+      const res = await axios.post('/api/bookings', newBooking);
+      const savedBooking = res.data;
+      setBookings([savedBooking, ...bookings]);
+      setSelectedBooking(savedBooking);
+      setActiveTab('bookings');
+      setViewModal('details');
+    } catch (error) {
+      alert('Failed to create entry: ' + (error.response?.data?.message || error.message));
+    }
+    setEntryData({
+      name: '',
+      mobile: '',
+      address: '',
+      roomType: 'Standard Room',
+      roomNumber: '',
+      checkInDate: '',
+      checkOutDate: '',
+      durationValue: 1,
+      durationUnit: 'Days',
+      guests: 1,
+      totalAmount: '',
+      downPayment: '',
+      paymentMethod: 'Cash',
+      photoPreview: null
+    });
   };
 
   // Multi Booking Generate Logic
-  const handleMultiBookingSubmit = (e) => {
+  const handleMultiBookingSubmit = async (e) => {
     e.preventDefault();
-    const newId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
-    
+    if (!multiBookingData.roomNumbers.length) {
+      alert('Please select at least one room number.');
+      return;
+    }
+    if (!Number(multiBookingData.roomRate)) {
+      alert('Please enter the rent for one room.');
+      return;
+    }
+
+    const requestStart = new Date(multiBookingData.checkIn);
+    const requestEnd = new Date(multiBookingData.checkOut);
+    if (requestEnd <= requestStart) {
+      alert('Check-out date must be after the check-in date.');
+      return;
+    }
+    const startsNowOrEarlier = requestStart <= new Date();
+
+    const conflictingRooms = multiBookingData.roomNumbers.filter(roomNumber => bookings.some(booking => {
+      const status = booking.status || (booking.actualCheckOut ? 'Checked-Out' : 'Checked-In');
+      if (status === 'Checked-Out' || status === 'Cancelled') return false;
+
+      const bookedRoomNumbers = booking.roomNumbers || (String(booking.room || '').match(/\b\d{3}\b/g) || []);
+      if (!bookedRoomNumbers.map(String).includes(String(roomNumber))) return false;
+
+      const bookedStart = new Date(booking.rawCheckIn);
+      const bookedEnd = new Date(booking.rawCheckOut);
+      if (isNaN(bookedStart.getTime()) || isNaN(bookedEnd.getTime())) return true;
+      return requestStart < bookedEnd && requestEnd > bookedStart;
+    }));
+
+    if (conflictingRooms.length) {
+      alert(`Room ${conflictingRooms.join(', ')} already booked for selected dates.`);
+      return;
+    }
+
     const formatDate = (dateStr) => {
       if (!dateStr) return '';
       const d = new Date(dateStr);
@@ -193,86 +537,82 @@ function Admin() {
     };
 
     const newBooking = {
-      id: newId,
       name: multiBookingData.guestName,
       companyName: multiBookingData.companyName,
       mobile: multiBookingData.mobile,
       address: multiBookingData.address || 'Corporate Booking',
       guestGstin: multiBookingData.guestGstin || '',
-      room: multiBookingData.room,
-      roomCount: multiBookingData.roomCount || 1,
+      room: `${multiBookingData.roomType} (Rooms ${multiBookingData.roomNumbers.join(', ')})`,
+      roomType: multiBookingData.roomType,
+      roomNumbers: multiBookingData.roomNumbers,
+      roomRate: Number(multiBookingData.roomRate) || 0,
+      roomCount: multiBookingData.roomNumbers.length,
+      nights: multiNightCount,
       checkIn: formatDate(multiBookingData.checkIn),
       checkOut: formatDate(multiBookingData.checkOut),
       rawCheckIn: multiBookingData.checkIn,
       rawCheckOut: multiBookingData.checkOut,
       guests: multiBookingData.guests,
-      totalAmount: multiBookingData.totalAmount,
+      totalAmount: multiBookingTotalAmount,
       advance: multiBookingData.advance || 0,
       paymentMethod: multiBookingData.paymentMethod,
-      status: 'Checked-In', // Active live booking
+      status: startsNowOrEarlier ? 'Checked-In' : 'Pending',
+      actualCheckIn: startsNowOrEarlier ? new Date().toLocaleDateString('en-GB') + ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null,
       actualCheckOut: null
     };
 
-    const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-    allBookings[newId] = newBooking;
-    localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
-    
-    setBookings([newBooking, ...bookings]);
-    setSelectedBooking(newBooking);
-    setViewModal('bill');
-    
-    setMultiBookingData({ companyName: '', guestName: '', mobile: '', address: '', guestGstin: '', room: '', roomCount: 2, checkIn: new Date().toISOString().split('T')[0], checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0], guests: 2, totalAmount: '', advance: '', paymentMethod: 'Bank Transfer' });
+    // Check if payment method is Online
+    if (multiBookingData.paymentMethod === 'Online') {
+      // Initiate Razorpay payment
+      initiateRazorpayPayment(newBooking, multiBookingTotalAmount, 'multiBooking');
+      return;
+    }
+
+    try {
+      const res = await axios.post('/api/bookings', newBooking);
+      const savedBooking = res.data;
+      setBookings([savedBooking, ...bookings]);
+      setSelectedBooking(savedBooking);
+      setViewModal('bill');
+    } catch (error) {
+      alert('Failed to create multi-booking: ' + (error.response?.data?.message || error.message));
+    }
+
+    setMultiBookingData({ companyName: '', guestName: '', mobile: '', address: '', guestGstin: '', roomType: 'Standard Room', roomNumbers: [], roomRate: '', checkIn: toLocalDateTimeInput(new Date()), checkOut: toLocalDateTimeInput(addDays(new Date(), 1)), guests: 2, advance: '', paymentMethod: 'Bank Transfer' });
   };
 
   // Staff Attendance Update & Daily Record Logic
-  const updateStaffStatus = (id, newStatus) => {
-    const updatedStaff = staffList.map(staff => {
-      if (staff.id === id) {
-        const history = { ...(staff.history || {}) };
-        const oldStatus = history[todayStr];
-        const stats = { ...(staff.stats || { P: 0, A: 0, L: 0, H: 0 }) };
-
-        // Agar aaj ki attendance pehle hi lag chuki hai, to purana status minus karein
-        if (oldStatus === 'Present') stats.P -= 1;
-        else if (oldStatus === 'Absent') stats.A -= 1;
-        else if (oldStatus === 'Leave') stats.L -= 1;
-        else if (oldStatus === 'Half Day') stats.H -= 1;
-
-        // Naya status add karein
-        if (newStatus === 'Present') stats.P += 1;
-        else if (newStatus === 'Absent') stats.A += 1;
-        else if (newStatus === 'Leave') stats.L += 1;
-        else if (newStatus === 'Half Day') stats.H += 1;
-
-        history[todayStr] = newStatus; // Aaj ke record me save karein
-        return { ...staff, status: newStatus, stats, history };
-      }
-      return staff;
-    });
-    setStaffList(updatedStaff);
-    localStorage.setItem('hotel_staff', JSON.stringify(updatedStaff));
+  const updateStaffStatus = async (id, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.put(`/api/staff/${id}/attendance`, 
+        { newStatus, todayStr },
+        { headers: { 'x-auth-token': token } }
+      );
+      setStaffList(staffList.map(staff => staff._id === id ? res.data : staff));
+    } catch (error) {
+      alert('Failed to update staff status.');
+      console.error(error);
+    }
   };
 
   // Guest ko portal par alert send karne ka logic
   const sendCheckoutReminder = (id) => {
-    const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-    if(allBookings[id]) {
-       allBookings[id].checkoutAlert = true;
-       localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
-       setBookings(bookings.map(b => b.id === id ? { ...b, checkoutAlert: true } : b));
-       alert(`Check-out reminder sent successfully to Guest (ID: ${id})!`);
-    }
+    // This needs a backend implementation. For now, it will just be a UI change.
+    // In a real app: await axios.put(`/api/bookings/${id}/remind`);
+    setBookings(bookings.map(b => b.id === id ? { ...b, checkoutAlert: true } : b));
+    alert(`Check-out reminder sent successfully to Guest (ID: ${id})!`);
   };
 
   // Manual ID daal kar Alert send karne ka logic
-  const handleManualAlert = () => {
+  const handleManualAlert = async () => {
     const targetId = window.prompt("Enter Reservation ID (e.g., VSW-123456) to send Check-Out Alert:");
     if (targetId) {
       const id = targetId.trim().toUpperCase();
-      const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-      if(allBookings[id]) {
-         allBookings[id].checkoutAlert = true;
-         localStorage.setItem('vip_bookings', JSON.stringify(allBookings));
+      const bookingExists = bookings.some(b => b.id === id);
+      if (bookingExists) {
+         // In a real app: await axios.put(`/api/bookings/${id}/remind`);
+         // For now, just update the state
          setBookings(bookings.map(b => b.id === id ? { ...b, checkoutAlert: true } : b));
          alert(`Check-out reminder sent successfully to Guest (ID: ${id})!`);
       } else {
@@ -281,12 +621,24 @@ function Admin() {
     }
   };
 
-  // Staff ko delete karne ka logic
-  const deleteStaff = (id) => {
-    if(window.confirm('Are you sure you want to permanently remove this staff member?')) {
-      const updatedStaff = staffList.filter(staff => staff.id !== id);
-      setStaffList(updatedStaff);
-      localStorage.setItem('hotel_staff', JSON.stringify(updatedStaff));
+  // Staff record ko preserve karke sirf Super Admin inactive/archive kar sakta hai
+  const deleteStaff = async (id) => {
+    if(currentUserRole !== 'sadmin') {
+      alert('Only Super Admin can archive staff records.');
+      return;
+    }
+
+    if(window.confirm('This will keep the staff record and mark it as Inactive. Continue?')) {
+      const now = new Date();
+      const auditTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.delete(`/api/staff/${id}`, { headers: { 'x-auth-token': token }, data: { archivedAt: auditTime, archivedBy: 'Super Admin' } });
+        setStaffList(staffList.map(staff => staff._id === id ? res.data : staff));
+      } catch (error) {
+        alert('Failed to archive staff member.');
+        console.error(error);
+      }
     }
   };
 
@@ -306,8 +658,8 @@ function Admin() {
   });
 
   const exportToCSV = () => {
-    const headers = ['Booking ID', 'Guest Name', 'Mobile', 'Room', 'Check-In', 'Check-Out', 'Actual Check-Out', 'Total Amount (Rs)', 'Advance (Rs)', 'Payment Method'];
-    const rows = displayedBookings.map(b => [b.id, `"${b.name}"`, b.mobile, `"${b.room}"`, b.checkIn, b.checkOut, b.actualCheckOut || 'Pending', b.totalAmount, b.advance, b.paymentMethod]);
+    const headers = ['Booking ID', 'Guest Name', 'Mobile', 'Room', 'Status', 'Check-In', 'Check-Out', 'Actual Check-Out', 'Total Amount (Rs)', 'Advance (Rs)', 'Payment Method', 'Cancelled/Archived At', 'Cancelled/Archived By', 'Reason'];
+    const rows = displayedBookings.map(b => [b.id, `"${b.name}"`, b.mobile, `"${b.room}"`, b.status || '', b.checkIn, b.checkOut, b.actualCheckOut || 'Pending', b.totalAmount, b.advance, b.paymentMethod, b.cancelledAt || '', b.cancelledBy || '', `"${b.cancelReason || ''}"`]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -383,14 +735,111 @@ function Admin() {
     else paymentStats['Cash']++;
   });
   const totalPayments = displayedBookings.length || 1;
+  const entryTotalAmount = Number(entryData.totalAmount) || 0;
+  const entryDownPayment = Number(entryData.downPayment) || 0;
+  const entryPendingAmount = Math.max(0, entryTotalAmount - entryDownPayment);
+  const multiRoomOptions = Array.from({ length: 10 }, (_, index) => String(101 + index));
+  const multiNightCount = Math.max(1, Math.ceil((new Date(multiBookingData.checkOut) - new Date(multiBookingData.checkIn)) / 86400000) || 1);
+  const multiRoomCount = multiBookingData.roomNumbers.length;
+  const multiRoomRate = Number(multiBookingData.roomRate) || 0;
+  const multiBookingTotalAmount = multiRoomCount * multiRoomRate * multiNightCount;
+  const customBillNightCount = Math.max(1, Math.ceil((new Date(customBill.checkOut) - new Date(customBill.checkIn)) / 86400000) || 1);
+  const customBillRoomCount = customBill.roomNumbers.length;
+  const customBillRoomRate = Number(customBill.roomRate) || 0;
+  const customBillTotalAmount = customBillRoomCount * customBillRoomRate * customBillNightCount;
+
+  const getActiveStatus = (booking) => booking.status || (booking.actualCheckOut ? 'Checked-Out' : 'Checked-In');
+  const isClosedBooking = (booking) => {
+    const status = getActiveStatus(booking);
+    return status === 'Checked-Out' || status === 'Cancelled';
+  };
+  const getBookedRoomNumbers = (booking) => (
+    booking.roomNumbers || (String(booking.room || '').match(/\b\d{3}\b/g) || [])
+  ).map(String);
+  const roomHasBooking = (booking, roomNumber) => getBookedRoomNumbers(booking).includes(String(roomNumber));
+  const formatBookingWindow = (booking) => {
+    const start = new Date(booking.rawCheckIn);
+    const end = new Date(booking.rawCheckOut);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'Booked';
+
+    const sameDate = start.toDateString() === end.toDateString();
+    const dateText = start.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    const startTime = start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const endTime = end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const endDateText = end.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    return sameDate ? `${dateText}, ${startTime} - ${endTime}` : `${dateText} ${startTime} - ${endDateText} ${endTime}`;
+  };
+  const getRoomConflict = (roomNumber, checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return null;
+    const requestStart = new Date(checkIn);
+    const requestEnd = new Date(checkOut);
+    if (isNaN(requestStart.getTime()) || isNaN(requestEnd.getTime()) || requestEnd <= requestStart) return null;
+
+    return bookings.find(booking => {
+      if (isClosedBooking(booking) || !roomHasBooking(booking, roomNumber)) return false;
+
+      const bookedStart = new Date(booking.rawCheckIn);
+      const bookedEnd = new Date(booking.rawCheckOut);
+      if (isNaN(bookedStart.getTime()) || isNaN(bookedEnd.getTime())) return true;
+      return requestStart < bookedEnd && requestEnd > bookedStart;
+    }) || null;
+  };
+  const getUpcomingRoomBooking = (roomNumber) => {
+    const now = new Date();
+    return bookings
+      .filter(booking => !isClosedBooking(booking) && roomHasBooking(booking, roomNumber))
+      .filter(booking => {
+        const start = new Date(booking.rawCheckIn);
+        return !isNaN(start.getTime()) && start >= now;
+      })
+      .sort((a, b) => new Date(a.rawCheckIn) - new Date(b.rawCheckIn))[0] || null;
+  };
+  const entryRoomOptions = multiRoomOptions.map(roomNumber => ({
+    roomNumber,
+    conflict: getRoomConflict(roomNumber, entryData.checkInDate, entryData.checkOutDate),
+    upcoming: getUpcomingRoomBooking(roomNumber)
+  }));
+  const multiUnavailableRooms = multiRoomOptions.filter(roomNumber => getRoomConflict(roomNumber, multiBookingData.checkIn, multiBookingData.checkOut));
+
+  const toggleMultiRoom = (roomNumber) => {
+    if (multiUnavailableRooms.includes(roomNumber)) return;
+    setMultiBookingData(prev => ({
+      ...prev,
+      roomNumbers: prev.roomNumbers.includes(roomNumber)
+        ? prev.roomNumbers.filter(number => number !== roomNumber)
+        : [...prev.roomNumbers, roomNumber].sort()
+    }));
+  };
+
+  const toggleCustomBillRoom = (roomNumber) => {
+    setCustomBill(prev => ({
+      ...prev,
+      roomNumbers: prev.roomNumbers.includes(roomNumber)
+        ? prev.roomNumbers.filter(number => number !== roomNumber)
+        : [...prev.roomNumbers, roomNumber].sort()
+    }));
+  };
 
   const daysWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const mockOccupancy = [45, 55, 60, 50, 85, 95, 80]; // Mock week data
 
   return (
     <div className="admin-layout">
+      <div className="admin-mobile-bar">
+        <button className="admin-menu-toggle" type="button" onClick={() => setSidebarOpen(true)} aria-label="Open admin menu" aria-expanded={sidebarOpen}>
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <img src="/logo.png" alt="Viswa Hotel" />
+        <strong>Admin Panel</strong>
+      </div>
+
+      {sidebarOpen && <button className="admin-sidebar-backdrop" type="button" onClick={() => setSidebarOpen(false)} aria-label="Close admin menu"></button>}
+
       {/* Left Sidebar */}
-      <aside className="admin-sidebar">
+      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <button className="admin-sidebar-close" type="button" onClick={() => setSidebarOpen(false)} aria-label="Close admin menu">&times;</button>
         <div className="admin-brand">
           <img src="/logo.png" alt="Visawa Logo" />
           <h2>Admin Panel</h2>
@@ -398,23 +847,26 @@ function Admin() {
         
         <nav className="admin-nav">
           {currentUserRole === 'sadmin' && (
-            <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
+            <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => handleTabChange('analytics')}>
               📈 Business Analytics
             </button>
           )}
-          <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
+          <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => handleTabChange('dashboard')}>
             📊 Dashboard Overview
           </button>
-          <button className={activeTab === 'bookings' ? 'active' : ''} onClick={() => setActiveTab('bookings')}>
+          <button className={activeTab === 'guest_entry' ? 'active' : ''} onClick={() => handleTabChange('guest_entry')}>
+            + Guest Entry
+          </button>
+          <button className={activeTab === 'bookings' ? 'active' : ''} onClick={() => handleTabChange('bookings')}>
             🧾 All Bookings
           </button>
-          <button className={activeTab === 'multi_booking' ? 'active' : ''} onClick={() => setActiveTab('multi_booking')}>
+          <button className={activeTab === 'multi_booking' ? 'active' : ''} onClick={() => handleTabChange('multi_booking')}>
             🏢 Multi/Corp Booking
           </button>
-          <button className={activeTab === 'create_bill' ? 'active' : ''} onClick={() => setActiveTab('create_bill')}>
+          <button className={activeTab === 'create_bill' ? 'active' : ''} onClick={() => handleTabChange('create_bill')}>
             📝 Create Bill
           </button>
-          <button className={activeTab === 'staff' ? 'active' : ''} onClick={() => setActiveTab('staff')}>
+          <button className={activeTab === 'staff' ? 'active' : ''} onClick={() => handleTabChange('staff')}>
             👔 Staff Management
           </button>
           
@@ -428,14 +880,22 @@ function Admin() {
 
       {/* Right Main Content */}
       <main className="admin-main">
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <p style={{ fontSize: '1.2rem', color: '#d4af37', fontWeight: 'bold' }}>
+              Loading Admin Panel...
+            </p>
+          </div>
+        ) : (
+        <>
         <div className="admin-header">
-          <div>
+          <div className="admin-header-copy">
             <h1>Welcome, Administrator</h1>
             <p style={{ color: '#aaa', fontFamily: 'sans-serif', margin: '5px 0 0 0' }}>Here is what's happening at Viswa Hotel & Resorts today.</p>
           </div>
           <div className="admin-profile">
             <img src="/logo.png" alt="Admin" style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#fff' }} />
-            <div>
+            <div className="admin-profile-text">
               <strong style={{ display: 'block', color: '#d4af37', fontSize: '0.95rem', textShadow: currentUserRole === 'sadmin' ? '0 0 10px rgba(212,175,55,0.8)' : 'none' }}>{currentUserRole === 'sadmin' ? '👑 Executive Owner' : 'Hotel Admin'}</strong>
               <span style={{ color: '#2ecc71', fontSize: '0.8rem', fontWeight: 'bold' }}>● Online</span>
             </div>
@@ -454,9 +914,6 @@ function Admin() {
               </button>
               <button onClick={handleManualAlert} style={{ flex: '1 1 200px', background: 'linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(243, 156, 18, 0.05))', border: '1px solid rgba(243, 156, 18, 0.3)', color: '#f39c12', padding: '20px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.3s' }}>
                 🔔 Send Guest Alert
-              </button>
-              <button onClick={handleResetData} style={{ flex: '1 1 200px', background: 'linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(231, 76, 60, 0.05))', border: '1px solid rgba(231, 76, 60, 0.3)', color: '#e74c3c', padding: '20px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.3s' }}>
-                ⚠️ Reset Data
               </button>
             </div>
 
@@ -487,22 +944,22 @@ function Admin() {
 
             {/* Stats Cards */}
             <div className="stats-grid">
-              <div className="stat-card">
+              <div className="stat-card" style={{ cursor: 'pointer', transition: 'all 0.3s' }} onClick={() => setCardDetailsModal('bookings')}>
                 <h3>Total Bookings</h3>
                 <p className="value">{bookings.length}</p>
               </div>
-              <div className="stat-card">
+              <div className="stat-card" style={{ cursor: 'pointer', transition: 'all 0.3s' }} onClick={() => setCardDetailsModal('available')}>
                 <h3>Available Rooms</h3>
-                <p className="value">12</p>
+                <p className="value">{getAvailableRooms().length}</p>
               </div>
-              <div className="stat-card">
+              <div className="stat-card" style={{ cursor: 'pointer', transition: 'all 0.3s' }} onClick={() => setCardDetailsModal('checkout')}>
                 <h3>Pending Check-outs</h3>
                 <p className="value" style={{ color: '#e74c3c' }}>{bookings.filter(b => {
                   const st = b.status || (b.actualCheckOut ? 'Checked-Out' : 'Checked-In');
                   return st === 'Checked-In';
                 }).length}</p>
               </div>
-              <div className="stat-card">
+              <div className="stat-card" style={{ cursor: 'pointer', transition: 'all 0.3s' }} onClick={() => setCardDetailsModal('active-staff')}>
                 <h3>Active Staff</h3>
                 <p className="value" style={{ color: '#3498db' }}>{staffList.filter(s => s.status === 'Present').length}</p>
               </div>
@@ -552,7 +1009,7 @@ function Admin() {
                           return <span style={{color: '#888', fontSize: '0.85rem'}}>Completed</span>;
                         }
                       })()}
-                      <button onClick={() => handleDeleteBooking(booking.id)} style={{background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', transition: '0.3s'}} title="Delete Booking">🗑️</button>
+                      <button onClick={() => handleDeleteBooking(booking.id)} style={{display: currentUserRole === 'sadmin' ? 'inline-block' : 'none', background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', transition: '0.3s'}} title="Archive Booking">Archive</button>
                     </td>
                   </tr>
                 )) : (
@@ -560,6 +1017,107 @@ function Admin() {
                 )}
               </tbody>
             </table>
+
+            {/* Card Details Modal */}
+            {cardDetailsModal && (
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+                <div style={{ background: '#1a1a1a', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '15px', padding: '30px', maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', borderBottom: '1px solid rgba(212,175,55,0.2)', paddingBottom: '15px' }}>
+                    <h2 style={{ color: '#d4af37', margin: 0, fontSize: '1.5rem' }}>
+                      {cardDetailsModal === 'available' && '🏨 Available Rooms'}
+                      {cardDetailsModal === 'checkout' && '🚪 Checked-In Guests (Pending Check-Out)'}
+                      {cardDetailsModal === 'bookings' && '📅 All Bookings'}
+                      {cardDetailsModal === 'active-staff' && '👔 Active Staff Members'}
+                    </h2>
+                    <button onClick={() => setCardDetailsModal(null)} style={{ background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: 'none', fontSize: '1.5rem', cursor: 'pointer', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                  </div>
+
+                  {cardDetailsModal === 'available' && (
+                    <div>
+                      <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '1rem' }}>Total Available: <span style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '1.2rem' }}>{getAvailableRooms().length} Rooms</span></p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' }}>
+                        {getAvailableRooms().length > 0 ? getAvailableRooms().map(room => (
+                          <div key={room} style={{ background: 'rgba(46, 204, 113, 0.15)', border: '2px solid #2ecc71', borderRadius: '8px', padding: '15px', textAlign: 'center', color: '#2ecc71', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.3s' }}>
+                            Room {room}
+                          </div>
+                        )) : (
+                          <p style={{ color: '#e74c3c', gridColumn: '1 / -1', textAlign: 'center', padding: '20px' }}>No rooms available at the moment</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {cardDetailsModal === 'checkout' && (
+                    <div>
+                      <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '1rem' }}>Total Checked-In: <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '1.2rem' }}>{getCheckedInGuests().length} Guests</span></p>
+                      {getCheckedInGuests().length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                          {getCheckedInGuests().map((guest, idx) => (
+                            <div key={idx} style={{ background: 'rgba(231, 76, 60, 0.1)', border: '1px solid rgba(231, 76, 60, 0.3)', borderRadius: '8px', padding: '15px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '1rem' }}>{guest.name}</span>
+                                <span style={{ background: 'rgba(231, 76, 60, 0.2)', color: '#e74c3c', padding: '5px 12px', borderRadius: '15px', fontSize: '0.8rem', fontWeight: 'bold' }}>Checked-In</span>
+                              </div>
+                              <p style={{ color: '#aaa', margin: '8px 0', fontSize: '0.9rem' }}>📞 {guest.mobile}</p>
+                              <p style={{ color: '#aaa', margin: '8px 0', fontSize: '0.9rem' }}>🏨 {guest.room}</p>
+                              <p style={{ color: '#aaa', margin: '8px 0', fontSize: '0.9rem' }}>📅 Check-In: {guest.checkIn} | Check-Out: {guest.checkOut}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: '#2ecc71', textAlign: 'center', padding: '20px' }}>No checked-in guests at the moment</p>
+                      )}
+                    </div>
+                  )}
+
+                  {cardDetailsModal === 'bookings' && (
+                    <div>
+                      <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '1rem' }}>Total Bookings: <span style={{ color: '#d4af37', fontWeight: 'bold', fontSize: '1.2rem' }}>{bookings.length} Bookings</span></p>
+                      {bookings.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                          {bookings.slice(0, 10).map((booking, idx) => (
+                            <div key={idx} style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '8px', padding: '15px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '1rem' }}>{booking.name}</span>
+                                <span style={{ background: booking.status === 'Checked-In' || !booking.actualCheckOut ? 'rgba(39, 174, 96, 0.2)' : 'rgba(231, 76, 60, 0.2)', color: booking.status === 'Checked-In' || !booking.actualCheckOut ? '#27ae60' : '#e74c3c', padding: '5px 12px', borderRadius: '15px', fontSize: '0.8rem', fontWeight: 'bold' }}>{booking.status || (booking.actualCheckOut ? 'Checked-Out' : 'Checked-In')}</span>
+                              </div>
+                              <p style={{ color: '#aaa', margin: '8px 0', fontSize: '0.9rem' }}>ID: {booking.id}</p>
+                              <p style={{ color: '#aaa', margin: '8px 0', fontSize: '0.9rem' }}>🏨 {booking.room}</p>
+                              <p style={{ color: '#d4af37', margin: '8px 0', fontSize: '0.9rem', fontWeight: 'bold' }}>₹{booking.totalAmount}</p>
+                            </div>
+                          ))}
+                          {bookings.length > 10 && <p style={{ color: '#888', textAlign: 'center', marginTop: '15px' }}>... and {bookings.length - 10} more bookings</p>}
+                        </div>
+                      ) : (
+                        <p style={{ color: '#2ecc71', textAlign: 'center', padding: '20px' }}>No bookings found</p>
+                      )}
+                    </div>
+                  )}
+
+                  {cardDetailsModal === 'active-staff' && (
+                    <div>
+                      <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '1rem' }}>Total Active: <span style={{ color: '#3498db', fontWeight: 'bold', fontSize: '1.2rem' }}>{staffList.filter(s => s.status === 'Present').length} / {staffList.length}</span></p>
+                      {staffList.filter(s => s.status === 'Present').length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                          {staffList.filter(s => s.status === 'Present').map((staff, idx) => (
+                            <div key={idx} style={{ background: 'rgba(46, 204, 113, 0.1)', border: '1px solid rgba(46, 204, 113, 0.3)', borderRadius: '8px', padding: '15px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '1rem' }}>{staff.name}</span>
+                                <span style={{ background: 'rgba(46, 204, 113, 0.2)', color: '#2ecc71', padding: '5px 12px', borderRadius: '15px', fontSize: '0.8rem', fontWeight: 'bold' }}>● Present</span>
+                              </div>
+                              <p style={{ color: '#aaa', margin: '8px 0', fontSize: '0.9rem' }}>{staff.staffId} - {staff.role}</p>
+                              <p style={{ color: '#aaa', margin: '8px 0', fontSize: '0.9rem' }}>Shift: {staff.shift}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: '#e74c3c', textAlign: 'center', padding: '20px' }}>No staff members present</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -636,7 +1194,7 @@ function Admin() {
                                  {booking.checkoutAlert ? '🔔 Reminder Sent' : '🔔 Send Alert'}
                               </button>
                             )}
-                            <button className="admin-btn-action" style={{background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c'}} onClick={() => handleDeleteBooking(booking.id)}>🗑️ Delete</button>
+                            {currentUserRole === 'sadmin' && <button className="admin-btn-action" style={{background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c'}} onClick={() => handleDeleteBooking(booking.id)}>Archive</button>}
                           </>
                         );
                       })()}
@@ -677,7 +1235,7 @@ function Admin() {
               </thead>
               <tbody>
                 {staffList.map((staff) => (
-                  <tr key={staff.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#ccc' }}>
+                  <tr key={staff._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#ccc' }}>
                     <td style={{ padding: '15px', color: '#fff', fontWeight: 'bold' }}>
                       👔 {staff.name}<br/>
                       <small style={{ color: '#888', fontWeight: 'normal' }}>ID: {staff.staffId}</small>
@@ -690,12 +1248,12 @@ function Admin() {
                       </span>
                     </td>
                     <td style={{ padding: '15px', textAlign: 'center', display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      <button onClick={() => updateStaffStatus(staff.id, 'Present')} style={{ background: 'rgba(39, 174, 96, 0.2)', color: '#27ae60', border: '1px solid #27ae60', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>Present</button>
-                      <button onClick={() => updateStaffStatus(staff.id, 'Half Day')} style={{ background: 'rgba(52, 152, 219, 0.2)', color: '#3498db', border: '1px solid #3498db', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>Half Day</button>
-                      <button onClick={() => updateStaffStatus(staff.id, 'Absent')} style={{ background: 'rgba(231, 76, 60, 0.2)', color: '#e74c3c', border: '1px solid #e74c3c', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>Absent</button>
-                      <button onClick={() => updateStaffStatus(staff.id, 'Leave')} style={{ background: 'rgba(241, 196, 15, 0.2)', color: '#f1c40f', border: '1px solid #f1c40f', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>Leave</button>
+                      <button onClick={() => updateStaffStatus(staff._id, 'Present')} style={{ background: 'rgba(39, 174, 96, 0.2)', color: '#27ae60', border: '1px solid #27ae60', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>Present</button>
+                      <button onClick={() => updateStaffStatus(staff._id, 'Half Day')} style={{ background: 'rgba(52, 152, 219, 0.2)', color: '#3498db', border: '1px solid #3498db', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>Half Day</button>
+                      <button onClick={() => updateStaffStatus(staff._id, 'Absent')} style={{ background: 'rgba(231, 76, 60, 0.2)', color: '#e74c3c', border: '1px solid #e74c3c', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>Absent</button>
+                      <button onClick={() => updateStaffStatus(staff._id, 'Leave')} style={{ background: 'rgba(241, 196, 15, 0.2)', color: '#f1c40f', border: '1px solid #f1c40f', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>Leave</button>
                       <button onClick={() => { setSelectedStaff(staff); setViewModal('staff_history'); }} style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#fff', border: '1px solid #666', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>📜 Record</button>
-                      <button onClick={() => deleteStaff(staff.id)} style={{ background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>🗑️ Delete</button>
+                      {currentUserRole === 'sadmin' && <button onClick={() => deleteStaff(staff._id)} style={{ background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' }}>Archive</button>}
                     </td>
                   </tr>
                 ))}
@@ -920,9 +1478,14 @@ function Admin() {
         )}
 
         {activeTab === 'multi_booking' && (
-          <div style={{ background: 'rgba(20,20,20,0.8)', padding: '30px', borderRadius: '15px', border: '1px solid rgba(212,175,55,0.2)', maxWidth: '850px', margin: '0 auto' }}>
-            <h2 style={{ color: '#d4af37', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginTop: 0, fontSize: '2rem', fontFamily: 'Georgia, serif' }}>Corporate / Multi-Room Booking</h2>
-            <p style={{ color: '#aaa', marginBottom: '25px' }}>Book multiple rooms together under a company or group name. This creates an active (live) booking and generates a consolidated tax invoice instantly.</p>
+          <section className="guest-entry-page corporate-booking-page">
+            <div className="corporate-booking-intro">
+              <div>
+                <span className="corporate-booking-kicker">Group Reservation</span>
+                <h2>Corporate / Multi-Room Booking</h2>
+              </div>
+              <p className="guest-entry-subtitle">Select the required room numbers, add one-room rent, and the full booking amount will calculate automatically.</p>
+            </div>
             
             <form onSubmit={handleMultiBookingSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -950,33 +1513,55 @@ function Admin() {
                 <input type="text" value={multiBookingData.address} onChange={(e) => setMultiBookingData({...multiBookingData, address: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="City, State" />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1' }}>
-                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Rooms Blocked (Category & Numbers) *</label>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '5px' }}>
-                  {['Deluxe', 'Super Deluxe', 'Suite', 'Standard', 'Conference Hall'].map(cat => (
-                    <button type="button" key={cat} onClick={() => setMultiBookingData(prev => ({...prev, room: prev.room ? prev.room + ', ' + cat : cat}))} style={{ background: 'rgba(212,175,55,0.1)', color: '#d4af37', border: '1px solid #d4af37', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>+ {cat}</button>
-                  ))}
-                  <button type="button" onClick={() => setMultiBookingData(prev => ({...prev, room: ''}))} style={{ background: 'rgba(231,76,60,0.1)', color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>Clear</button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Room Category *</label>
+                <select required value={multiBookingData.roomType} onChange={(e) => setMultiBookingData({...multiBookingData, roomType: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }}>
+                  <option>Standard Room</option>
+                  <option>Standard Single Room</option>
+                  <option>Comfort Double Room</option>
+                  <option>Premium Double</option>
+                  <option>Deluxe Suite</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Rent Per Room / Night (Rs.) *</label>
+                <input type="number" min="1" required value={multiBookingData.roomRate} onChange={(e) => setMultiBookingData({...multiBookingData, roomRate: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="0" />
+              </div>
+
+              <div className="multi-room-selector">
+                <div className="multi-room-selector-header">
+                  <label>Select Room Numbers *</label>
+                  <strong>{multiRoomCount} room(s) selected</strong>
                 </div>
-                <input type="text" required value={multiBookingData.room} onChange={(e) => setMultiBookingData({...multiBookingData, room: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="e.g. 5 Deluxe Rooms (101-105) & 1 Hall" />
+                <div className="multi-room-grid">
+                  {multiRoomOptions.map(roomNumber => {
+                    const selected = multiBookingData.roomNumbers.includes(roomNumber);
+                    const conflict = getRoomConflict(roomNumber, multiBookingData.checkIn, multiBookingData.checkOut);
+                    const upcoming = getUpcomingRoomBooking(roomNumber);
+                    const unavailable = Boolean(conflict);
+                    return (
+                      <button type="button" key={roomNumber} className={unavailable ? 'unavailable' : selected ? 'selected' : ''} onClick={() => toggleMultiRoom(roomNumber)} aria-pressed={selected} disabled={unavailable}>
+                        {roomNumber}
+                        {conflict && <small>Booked: {formatBookingWindow(conflict)}</small>}
+                        {!conflict && upcoming && <small>Next: {formatBookingWindow(upcoming)}</small>}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Rooms Booked *</label>
-                <input type="number" min="1" required value={multiBookingData.roomCount} onChange={(e) => setMultiBookingData({...multiBookingData, roomCount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Check-In Date *</label>
-                <input type="date" required value={multiBookingData.checkIn} onChange={(e) => setMultiBookingData({...multiBookingData, checkIn: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Check-In Date & Time *</label>
+                <input type="datetime-local" required value={multiBookingData.checkIn} onChange={(e) => setMultiBookingData({...multiBookingData, checkIn: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold', margin: 0 }}>Check-Out Date *</label>
-                  <span style={{ color: '#27ae60', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(39,174,96,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{Math.max(1, Math.ceil((new Date(multiBookingData.checkOut) - new Date(multiBookingData.checkIn)) / (1000 * 60 * 60 * 24)) || 1)} Night(s)</span>
+                  <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold', margin: 0 }}>Check-Out Date & Time *</label>
+                  <span style={{ color: '#27ae60', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(39,174,96,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{multiNightCount} Night(s)</span>
                 </div>
-                <input type="date" required value={multiBookingData.checkOut} onChange={(e) => setMultiBookingData({...multiBookingData, checkOut: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+                <input type="datetime-local" required value={multiBookingData.checkOut} onChange={(e) => setMultiBookingData({...multiBookingData, checkOut: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -987,6 +1572,7 @@ function Admin() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Payment Method *</label>
                 <select value={multiBookingData.paymentMethod} onChange={(e) => setMultiBookingData({...multiBookingData, paymentMethod: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }}>
+                  <option value="Online">💳 Online Payment (Razorpay)</option>
                   <option value="Bank Transfer">Bank Transfer (NEFT/RTGS)</option>
                   <option value="UPI">UPI / QR Code</option>
                   <option value="Credit / Debit Card">Credit / Debit Card</option>
@@ -995,13 +1581,14 @@ function Admin() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Package Amount (Rs.) *</label>
-                <input type="number" min="0" required value={multiBookingData.totalAmount} onChange={(e) => setMultiBookingData({...multiBookingData, totalAmount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #d4af37', background: 'rgba(212,175,55,0.05)', color: '#d4af37', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Automatic Total Amount (Rs.)</label>
+                <input type="number" readOnly value={multiBookingTotalAmount} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #d4af37', background: 'rgba(212,175,55,0.05)', color: '#d4af37', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} />
+                <small className="booking-total-formula">{multiRoomCount} room(s) × Rs. {multiRoomRate} × {multiNightCount} night(s)</small>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Advance Received (Rs.)</label>
-                <input type="number" min="0" value={multiBookingData.advance} onChange={(e) => setMultiBookingData({...multiBookingData, advance: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #27ae60', background: 'rgba(39, 174, 96, 0.05)', color: '#27ae60', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
+                <input type="number" min="0" max={multiBookingTotalAmount} value={multiBookingData.advance} onChange={(e) => setMultiBookingData({...multiBookingData, advance: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #27ae60', background: 'rgba(39, 174, 96, 0.05)', color: '#27ae60', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
               </div>
 
               <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
@@ -1010,13 +1597,13 @@ function Admin() {
                 </button>
               </div>
             </form>
-          </div>
+          </section>
         )}
 
         {activeTab === 'create_bill' && (
-          <div style={{ background: 'rgba(20,20,20,0.8)', padding: '30px', borderRadius: '15px', border: '1px solid rgba(212,175,55,0.2)', maxWidth: '800px', margin: '0 auto' }}>
-            <h2 style={{ color: '#d4af37', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginTop: 0, fontSize: '2rem', fontFamily: 'Georgia, serif' }}>Create Manual Invoice</h2>
-            <p style={{ color: '#aaa', marginBottom: '25px' }}>Enter the guest and stay details below to instantly generate a professional tax invoice and save it to the system records.</p>
+          <section className="guest-entry-page create-bill-page">
+            <h2>Create Manual Invoice</h2>
+            <p className="guest-entry-subtitle">Select rooms and enter the rent for one room. The invoice amount will be calculated from rooms and nights automatically.</p>
             
             <form onSubmit={handleCreateBill} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1039,20 +1626,37 @@ function Admin() {
                 <input type="text" value={customBill.address} onChange={(e) => setCustomBill({...customBill, address: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="City, State" />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1' }}>
-                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Room Details (Category & Numbers) *</label>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '5px' }}>
-                  {['Deluxe', 'Super Deluxe', 'Suite', 'Standard', 'Single', 'Double'].map(cat => (
-                    <button type="button" key={cat} onClick={() => setCustomBill(prev => ({...prev, room: prev.room ? prev.room + ', ' + cat : cat}))} style={{ background: 'rgba(212,175,55,0.1)', color: '#d4af37', border: '1px solid #d4af37', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>+ {cat}</button>
-                  ))}
-                  <button type="button" onClick={() => setCustomBill(prev => ({...prev, room: ''}))} style={{ background: 'rgba(231,76,60,0.1)', color: '#e74c3c', border: '1px solid #e74c3c', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', fontWeight: 'bold' }}>Clear</button>
-                </div>
-                <input type="text" required value={customBill.room} onChange={(e) => setCustomBill({...customBill, room: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="e.g. 2 Deluxe Rooms (101, 102)" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Room Category *</label>
+                <select required value={customBill.roomType} onChange={(e) => setCustomBill({...customBill, roomType: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }}>
+                  <option>Standard Room</option>
+                  <option>Standard Single Room</option>
+                  <option>Comfort Double Room</option>
+                  <option>Premium Double</option>
+                  <option>Deluxe Suite</option>
+                </select>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Rooms *</label>
-                <input type="number" min="1" required value={customBill.roomCount} onChange={(e) => setCustomBill({...customBill, roomCount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} />
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Rent Per Room / Night (Rs.) *</label>
+                <input type="number" min="1" required value={customBill.roomRate} onChange={(e) => setCustomBill({...customBill, roomRate: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }} placeholder="0" />
+              </div>
+
+              <div className="multi-room-selector">
+                <div className="multi-room-selector-header">
+                  <label>Select Room Numbers *</label>
+                  <strong>{customBillRoomCount} room(s) selected</strong>
+                </div>
+                <div className="multi-room-grid">
+                  {multiRoomOptions.map(roomNumber => {
+                    const selected = customBill.roomNumbers.includes(roomNumber);
+                    return (
+                      <button type="button" key={roomNumber} className={selected ? 'selected' : ''} onClick={() => toggleCustomBillRoom(roomNumber)} aria-pressed={selected}>
+                        {roomNumber}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1063,7 +1667,7 @@ function Admin() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold', margin: 0 }}>Check-Out Date *</label>
-                  <span style={{ color: '#27ae60', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(39,174,96,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{Math.max(1, Math.ceil((new Date(customBill.checkOut) - new Date(customBill.checkIn)) / (1000 * 60 * 60 * 24)) || 1)} Night(s)</span>
+                  <span style={{ color: '#27ae60', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(39,174,96,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{customBillNightCount} Night(s)</span>
                 </div>
                 <input type="date" required value={customBill.checkOut} onChange={(e) => setCustomBill({...customBill, checkOut: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
               </div>
@@ -1076,6 +1680,7 @@ function Admin() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Payment Method *</label>
                 <select value={customBill.paymentMethod} onChange={(e) => setCustomBill({...customBill, paymentMethod: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem' }}>
+                  <option value="Online">💳 Online Payment (Razorpay)</option>
                   <option value="Cash">Cash</option>
                   <option value="UPI">UPI</option>
                   <option value="Credit / Debit Card">Credit / Debit Card</option>
@@ -1084,13 +1689,14 @@ function Admin() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Total Amount (Rs.) *</label>
-                <input type="number" min="0" required value={customBill.totalAmount} onChange={(e) => setCustomBill({...customBill, totalAmount: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #d4af37', background: 'rgba(212,175,55,0.05)', color: '#d4af37', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
+                <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Automatic Total Amount (Rs.)</label>
+                <input type="number" readOnly value={customBillTotalAmount} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #d4af37', background: 'rgba(212,175,55,0.05)', color: '#d4af37', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} />
+                <small className="booking-total-formula">{customBillRoomCount} room(s) × Rs. {customBillRoomRate} × {customBillNightCount} night(s)</small>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Advance Paid (Rs.)</label>
-                <input type="number" min="0" value={customBill.advance} onChange={(e) => setCustomBill({...customBill, advance: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #27ae60', background: 'rgba(39, 174, 96, 0.05)', color: '#27ae60', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
+                <input type="number" min="0" max={customBillTotalAmount} value={customBill.advance} onChange={(e) => setCustomBill({...customBill, advance: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #27ae60', background: 'rgba(39, 174, 96, 0.05)', color: '#27ae60', outline: 'none', fontWeight: 'bold', fontSize: '1.2rem' }} placeholder="0" />
               </div>
 
               <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
@@ -1099,7 +1705,104 @@ function Admin() {
                 </button>
               </div>
             </form>
-          </div>
+          </section>
+        )}
+
+        {activeTab === 'guest_entry' && (
+          <section className="guest-entry-page">
+              <h2>Front Desk Guest Entry</h2>
+              <p className="guest-entry-subtitle">Register a walk-in guest with room, stay, ID and payment details.</p>
+
+              <form onSubmit={handleEntrySubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '18px' }}>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Guest Name *
+                  <input type="text" required value={entryData.name} onChange={e => setEntryData({ ...entryData, name: e.target.value })} style={{ padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff' }} />
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Mobile Number *
+                  <input type="tel" required value={entryData.mobile} onChange={e => setEntryData({ ...entryData, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} maxLength="10" pattern="[0-9]{10}" style={{ padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff' }} />
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1' }}>
+                  Complete Address *
+                  <textarea required value={entryData.address} onChange={e => setEntryData({ ...entryData, address: e.target.value })} rows="2" style={{ padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff', resize: 'vertical' }} />
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Guest Photo
+                  <input type="file" accept="image/*" capture="user" onChange={handleEntryPhotoChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#ccc' }} />
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  ID Upload *
+                  <input type="file" required multiple accept="image/*,.pdf" capture="environment" style={{ padding: '10px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#ccc' }} />
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Room Type *
+                  <select required value={entryData.roomType} onChange={e => setEntryData({ ...entryData, roomType: e.target.value })} style={{ padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff' }}>
+                    <option>Standard Room</option>
+                    <option>Standard Single Room</option>
+                    <option>Comfort Double Room</option>
+                    <option>Couple Hourly (3-4 Hrs)</option>
+                    <option>Premium Double</option>
+                    <option>Deluxe Suite</option>
+                  </select>
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Available Room Number *
+                  <select required value={entryData.roomNumber} onChange={e => setEntryData({ ...entryData, roomNumber: e.target.value })} style={{ padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff' }}>
+                    <option value="">Select room</option>
+                    {entryRoomOptions.map(({ roomNumber, conflict, upcoming }) => (
+                      <option key={roomNumber} value={roomNumber} disabled={Boolean(conflict)}>
+                        Room {roomNumber}{conflict ? ` - Booked: ${formatBookingWindow(conflict)}` : upcoming ? ` - Next: ${formatBookingWindow(upcoming)}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Check-in *
+                  <input type="datetime-local" required value={entryData.checkInDate} onChange={e => setEntryData({ ...entryData, checkInDate: e.target.value })} style={{ padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff', colorScheme: 'dark' }} />
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Stay Duration *
+                  <span style={{ display: 'flex', gap: '8px' }}>
+                    <input type="number" min="1" required value={entryData.durationValue} onChange={e => setEntryData({ ...entryData, durationValue: e.target.value })} style={{ width: '50%', padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff' }} />
+                    <select value={entryData.durationUnit} onChange={e => setEntryData({ ...entryData, durationUnit: e.target.value })} style={{ width: '50%', padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff' }}>
+                      <option value="Hours">Hours</option>
+                      <option value="Days">Days</option>
+                    </select>
+                  </span>
+                  {entryData.checkOutDate && <small style={{ color: '#2ecc71' }}>Till {new Date(entryData.checkOutDate).toLocaleString('en-IN')}</small>}
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Total Guests *
+                  <input type="number" min="1" required value={entryData.guests} onChange={e => setEntryData({ ...entryData, guests: e.target.value })} style={{ padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff' }} />
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Total Amount *
+                  <input type="number" min="0" required value={entryData.totalAmount} onChange={e => setEntryData({ ...entryData, totalAmount: e.target.value })} style={{ padding: '13px', borderRadius: '6px', border: '1px solid #d4af37', background: '#111', color: '#d4af37' }} />
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Down Payment *
+                  <input type="number" min="0" max={entryTotalAmount} required value={entryData.downPayment} onChange={e => setEntryData({ ...entryData, downPayment: e.target.value })} style={{ padding: '13px', borderRadius: '6px', border: '1px solid #2ecc71', background: '#111', color: '#2ecc71' }} />
+                </label>
+                <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  Payment Method *
+                  <select required value={entryData.paymentMethod} onChange={e => setEntryData({ ...entryData, paymentMethod: e.target.value })} style={{ padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff' }}>
+                    <option value="Online">💳 Online Payment (Razorpay)</option>
+                    <option value="Cash">Cash / Counter</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Card">Card</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                  </select>
+                </label>
+                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', gap: '15px', padding: '18px', background: '#111', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '8px', color: '#ccc', flexWrap: 'wrap' }}>
+                  <span>Total: <strong style={{ color: '#d4af37' }}>Rs. {entryTotalAmount}</strong></span>
+                  <span>Advance: <strong style={{ color: '#2ecc71' }}>Rs. {entryDownPayment}</strong></span>
+                  <span>Pending: <strong style={{ color: '#fff' }}>Rs. {entryPendingAmount}</strong></span>
+                </div>
+                <button type="submit" style={{ gridColumn: '1 / -1', padding: '16px', background: 'linear-gradient(135deg, #d4af37, #b5952f)', color: '#111', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer' }}>
+                  Confirm Guest Entry
+                </button>
+              </form>
+          </section>
         )}
 
         {/* Modals for Details and Bill */}
@@ -1137,7 +1840,7 @@ function Admin() {
                 <div className="invoice-container" id="printable-invoice" style={{ background: '#fff', color: '#000', padding: '40px', borderRadius: '8px', maxWidth: '850px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
                   <div style={{ textAlign: 'right', fontSize: '0.75rem', fontWeight: 'bold', color: '#555', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>Original For Recipient</div>
                   {/* Header Section */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #333', paddingBottom: '20px', marginBottom: '20px' }}>
+                  <div className="invoice-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #333', paddingBottom: '20px', marginBottom: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                       <img src="/logo.png" alt="Viswa Hotel" style={{ width: '85px', height: '85px', objectFit: 'contain' }} />
                       <div>
@@ -1158,7 +1861,7 @@ function Admin() {
                   </div>
                   
                   {/* Guest & Booking Info */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
+                  <div className="invoice-booking-info" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
                     <div style={{ width: '48%' }}>
                       <h3 style={{ fontSize: '1rem', borderBottom: '1px solid #ddd', paddingBottom: '5px', margin: '0 0 10px 0', color: '#333' }}>BILLED TO:</h3>
                       <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.6', color: '#222' }}>
@@ -1184,6 +1887,8 @@ function Admin() {
                           <tr><td style={{ width: '40%' }}><strong>Booking ID:</strong></td><td>{selectedBooking.id}</td></tr>
                           <tr><td><strong>Room Details:</strong></td><td>{selectedBooking.room}</td></tr>
                           <tr><td><strong>Total Rooms:</strong></td><td>{selectedBooking.roomCount || 1}</td></tr>
+                          {selectedBooking.roomRate != null && <tr><td><strong>Rate / Room / Night:</strong></td><td>Rs. {Number(selectedBooking.roomRate).toFixed(2)}</td></tr>}
+                          {selectedBooking.nights != null && <tr><td><strong>Total Nights:</strong></td><td>{selectedBooking.nights}</td></tr>}
                           <tr><td><strong>Check-In:</strong></td><td>{selectedBooking.checkIn}</td></tr>
                           <tr><td><strong>Check-Out:</strong></td><td>{selectedBooking.actualCheckOut || selectedBooking.checkOut}</td></tr>
                           <tr><td><strong>Total Guests:</strong></td><td>{selectedBooking.guests} Person(s)</td></tr>
@@ -1193,7 +1898,7 @@ function Admin() {
                   </div>
 
                   {/* Itemized Services Table */}
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+                  <table className="invoice-services-table" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f4f4f4', color: '#333', textAlign: 'left', borderTop: '2px solid #333', borderBottom: '2px solid #333' }}>
                         <th style={{ padding: '12px', fontSize: '0.9rem' }}>#</th>
@@ -1206,7 +1911,10 @@ function Admin() {
                     <tbody>
                       <tr style={{ borderBottom: '1px solid #ddd' }}>
                         <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222' }}>1</td>
-                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222' }}>Accommodation Services - {selectedBooking.room}</td>
+                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222' }}>
+                          Accommodation Services - {selectedBooking.room}
+                          {selectedBooking.roomRate != null && <div style={{ marginTop: '4px', color: '#666', fontSize: '0.8rem' }}>Rs. {Number(selectedBooking.roomRate).toFixed(2)} × {selectedBooking.roomCount || 1} room(s) × {selectedBooking.nights || 1} night(s)</div>}
+                        </td>
                         <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'center' }}>996311</td>
                         <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'center' }}>{selectedBooking.roomCount || 1}</td>
                         <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'right' }}>{((Number(selectedBooking.totalAmount) || 0) / 1.12).toFixed(2)}</td>
@@ -1215,7 +1923,7 @@ function Admin() {
                   </table>
 
                   {/* Totals & UPI QR Code Section */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'flex-end' }}>
+                  <div className="invoice-payment-section" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'flex-end' }}>
                     <div style={{ width: '55%', textAlign: 'left' }}>
                       {Math.max(0, Number(selectedBooking.totalAmount) - Number(selectedBooking.advance)) > 0 ? (
                         <div style={{ padding: '15px 20px', border: '1px solid #e0e0e0', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '25px', background: '#fcfcfc', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
@@ -1355,7 +2063,7 @@ function Admin() {
                 </thead>
                 <tbody>
                   {staffList.map((staff) => (
-                    <tr key={staff.id}>
+                    <tr key={staff._id}>
                       <td style={{ fontFamily: 'monospace', color: '#555' }}>{staff.staffId}</td>
                       <td><strong>{staff.name}</strong> <br/><small style={{ color: '#888' }}>{staff.role}</small></td>
                       <td style={{ textAlign: 'center', color: '#27ae60', fontWeight: 'bold' }}>{staff.stats?.P || 0}</td>
@@ -1420,6 +2128,7 @@ function Admin() {
             </div>
           </div>
         )}
+        </>)}
 
       </main>
     </div>

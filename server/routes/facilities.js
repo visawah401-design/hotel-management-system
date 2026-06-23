@@ -1,5 +1,6 @@
 const express = require('express');
 const Facility = require('../models/Facility');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create Facility
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   const facility = new Facility(req.body);
   try {
     const newFacility = await facility.save();
@@ -25,7 +26,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update Facility
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
     const facility = await Facility.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!facility) {
@@ -38,7 +39,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete Facility
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const facility = await Facility.findByIdAndDelete(req.params.id);
     if (!facility) {

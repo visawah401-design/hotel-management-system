@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './GuestPortal.css';
+import axios from 'axios';
 
 function GuestPortal() {
   const [reservationId, setReservationId] = useState('');
@@ -7,6 +8,15 @@ function GuestPortal() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [showCertificate, setShowCertificate] = useState(false);
+
+  const handleLogout = useCallback(() => {
+    setLoggedInGuest(null);
+    setReservationId('');
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('role');
+    window.location.href = '/';
+  }, []);
 
   useEffect(() => {
     // Portal page par global Navbar aur Footer ko hide karne ka logic
@@ -21,76 +31,42 @@ function GuestPortal() {
     };
   }, []);
 
+  const fetchGuestData = useCallback(async (id) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`/api/bookings/${id}`);
+      setLoggedInGuest(response.data);
+    } catch (error) {
+      console.error("Failed to fetch guest data:", error);
+      alert('Failed to fetch booking details. The ID might be invalid or there was a server error.');
+      handleLogout(); // Log out if ID is invalid
+    } finally {
+      setLoading(false);
+    }
+  }, [handleLogout]);
+
   useEffect(() => {
     // Agar login page se aaya hai, toh direct dashboard open ho jayega
-    if (localStorage.getItem('token') === 'vip-guest-token') {
-      const id = localStorage.getItem('userId');
-      const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-      const profile = allBookings[id] || {};
-
-      setLoggedInGuest({
-        id: id,
-        name: profile.name || localStorage.getItem('vip_name') || 'VIP Guest',
-        room: profile.room || localStorage.getItem('vip_room') || 'Assigned Suite',
-        photo: profile.photo || localStorage.getItem('vip_photo') || '',
-        checkIn: profile.checkIn || localStorage.getItem('vip_checkIn') || 'N/A',
-        checkOut: profile.checkOut || localStorage.getItem('vip_checkOut') || 'N/A',
-        mobile: profile.mobile || localStorage.getItem('vip_mobile') || 'N/A',
-        address: profile.address || 'Not available',
-        guests: profile.guests || 1,
-        paymentMethod: profile.paymentMethod || 'Not available',
-        advance: profile.advance || 0,
-        totalAmount: profile.totalAmount || 0,
-        actualCheckOut: profile.actualCheckOut || null,
-        checkoutAlert: profile.checkoutAlert || false,
-        status: profile.status || (profile.actualCheckOut ? 'Checked-Out' : 'Checked-In')
-      });
+    const token = localStorage.getItem('token');
+    const guestId = localStorage.getItem('userId');
+    if (token === 'vip-guest-token' && guestId) {
+      fetchGuestData(guestId);
     }
-  }, []);
+  }, [fetchGuestData]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    setTimeout(() => {
-      const id = reservationId.toUpperCase();
-      const allBookings = JSON.parse(localStorage.getItem('vip_bookings') || '{}');
-      const profile = allBookings[id];
-
-      if (profile) {
-        setLoggedInGuest({
-          id: id,
-          name: profile.name,
-          room: profile.room,
-          photo: profile.photo,
-          checkIn: profile.checkIn,
-          checkOut: profile.checkOut,
-          mobile: profile.mobile,
-          address: profile.address,
-          guests: profile.guests,
-          paymentMethod: profile.paymentMethod,
-          advance: profile.advance,
-          totalAmount: profile.totalAmount,
-          actualCheckOut: profile.actualCheckOut || null,
-          checkoutAlert: profile.checkoutAlert || false,
-          status: profile.status || (profile.actualCheckOut ? 'Checked-Out' : 'Checked-In')
-        });
-        localStorage.setItem('token', 'vip-guest-token');
-        localStorage.setItem('userId', id);
-      } else {
-        alert('Invalid Reservation ID! No booking found for this Certificate ID.');
-      }
+    const id = reservationId.trim().toUpperCase();
+    if (!id.startsWith('VSW-')) {
+      alert('Invalid Reservation ID format. It must start with "VSW-".');
       setLoading(false);
-    }, 800);
-  };
-
-  const handleLogout = () => {
-    setLoggedInGuest(null);
-    setReservationId('');
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('role');
-    window.location.href = '/';
+      return;
+    }
+    // Use the same API logic as Login.js
+    await fetchGuestData(id);
+    localStorage.setItem('token', 'vip-guest-token');
+    localStorage.setItem('userId', id);
   };
 
   // Copy ID function for Certificate
