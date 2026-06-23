@@ -476,8 +476,12 @@ function Rooms({ isLoggedIn }) {
   const totalAmount = calculateTotalAmount();
   const advanceAmount = parseFloat(bookingData.advancePayment) || 0;
   const pendingAmount = Math.max(0, totalAmount - advanceAmount);
-  const bookingRoomOptions = Array.from({ length: 10 }, (_, index) => {
-    const roomNumber = String(101 + index);
+  const roomNumbersList = [
+    ...Array.from({ length: 5 }, (_, i) => String(101 + i)),
+    ...Array.from({ length: 5 }, (_, i) => String(201 + i))
+  ];
+
+  const bookingRoomOptions = roomNumbersList.map(roomNumber => {
     let isBooked = false;
 
     if (selectedRoom && bookingData.checkInDate && bookingData.checkOutDate) {

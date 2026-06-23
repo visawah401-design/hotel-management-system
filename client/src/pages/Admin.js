@@ -66,8 +66,11 @@ function Admin() {
 
   const currentUserRole = localStorage.getItem('role'); // Sadmin check karne ke liye
 
-  // Helper function to get all room numbers (101-135 for 35 rooms)
-  const allRoomNumbers = Array.from({ length: 35 }, (_, i) => 101 + i);
+  // Helper function to get all room numbers
+  const allRoomNumbers = [
+    ...Array.from({ length: 5 }, (_, i) => 101 + i),
+    ...Array.from({ length: 5 }, (_, i) => 201 + i)
+  ];
 
   // Helper function to get occupied rooms
   const getOccupiedRooms = () => {
@@ -738,7 +741,10 @@ function Admin() {
   const entryTotalAmount = Number(entryData.totalAmount) || 0;
   const entryDownPayment = Number(entryData.downPayment) || 0;
   const entryPendingAmount = Math.max(0, entryTotalAmount - entryDownPayment);
-  const multiRoomOptions = Array.from({ length: 10 }, (_, index) => String(101 + index));
+  const multiRoomOptions = [
+    ...Array.from({ length: 5 }, (_, i) => String(101 + i)),
+    ...Array.from({ length: 5 }, (_, i) => String(201 + i))
+  ];
   const multiNightCount = Math.max(1, Math.ceil((new Date(multiBookingData.checkOut) - new Date(multiBookingData.checkIn)) / 86400000) || 1);
   const multiRoomCount = multiBookingData.roomNumbers.length;
   const multiRoomRate = Number(multiBookingData.roomRate) || 0;
