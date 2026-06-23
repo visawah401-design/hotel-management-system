@@ -1,0 +1,11 @@
+# Set default behavior, in case users don't have core.autocrlf set.
+# This will handle all files NOT found below.
+* text=auto
+
+# Explicitly declare text files you want to always have LF line endings.
+# This will prevent the "LF will be replaced by CRLF" warning.
+*.js    text eol=lf
+*.css   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.html  text eol=lf
