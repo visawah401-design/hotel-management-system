@@ -1,12 +1,12 @@
 const express = require('express');
 const Booking = require('../models/Booking');
 const Room = require('../models/Room');
-const auth = require('../middleware/auth'); // Assuming you have auth middleware
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
 // Create Booking
-router.post('/', auth, async (req, res) => { // Now protected, even for guests, to get userId
+router.post('/', auth, async (req, res) => { // Auth is used to optionally get req.user
   try {
     // More fields from the frontend form
     const {
