@@ -15,7 +15,7 @@ const defaultRooms = [
     status: 'Available',
     description: 'A cozy and affordable room, perfect for solo travelers.',
     amenities: ['Free WiFi', 'AC', 'TV', 'Room Service'],
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80'
+    image: '/p1.png'
   },
   {
     _id: 'dummy_2',
@@ -26,7 +26,7 @@ const defaultRooms = [
     status: 'Available',
     description: 'Spacious double room, perfectly comfortable for couples or two guests.',
     amenities: ['Free WiFi', 'AC', 'Balcony', 'Restaurant', 'Smart TV'],
-    image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80'
+    image: '/p2.png'
   },
   {
     _id: 'dummy_3',
@@ -37,7 +37,7 @@ const defaultRooms = [
     status: 'Available',
     description: 'Short stay room. Perfect for resting and absolute privacy for 3-4 hours.',
     amenities: ['Free WiFi', 'AC', 'Shower', 'Total Privacy', 'In-room Dining'],
-    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80'
+    image: '/p3.png'
   },
   {
     _id: 'dummy_4',
@@ -48,7 +48,7 @@ const defaultRooms = [
     status: 'Available',
     description: 'Extra space with an additional bed, ideal for small families.',
     amenities: ['Free WiFi', 'AC', 'Mini Bar', 'Restaurant', 'Room Service'],
-    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=800&q=80'
+    image: '/p4.png'
   },
   {
     _id: 'dummy_5',
@@ -59,7 +59,7 @@ const defaultRooms = [
     status: 'Available',
     description: 'Luxury experience with a spacious living area and premium amenities.',
     amenities: ['AC', 'Jacuzzi', 'Balcony', 'Restaurant', 'Hot Water', 'Room Service'],
-    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80'
+    image: '/p5.png'
   },
   {
     _id: 'dummy_6',
@@ -70,7 +70,7 @@ const defaultRooms = [
     status: 'Available',
     description: 'A cozy and affordable room, perfect for solo travelers.',
     amenities: ['Free WiFi', 'AC', 'Smart TV', 'Water Cooler', 'Restaurant Menu'],
-    image: 'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=800&q=80'
+    image: '/p6.png'
   }
 ];
 

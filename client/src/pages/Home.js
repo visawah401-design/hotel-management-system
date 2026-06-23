@@ -4,27 +4,27 @@ import './Home.css';
 
 const heroSlides = [
   {
-    image: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1800&q=80',
+    image: '/hero6.png',
     label: 'Premium king room',
   },
   {
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1800&q=80',
+    image: '/hero2.png',
     label: 'Warm bedside comfort',
   },
   {
-    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1800&q=80',
+    image: '/hero3.png',
     label: 'Suite room lounge',
   },
   {
-    image: 'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=1800&q=80',
+    image: '/hero4.png',
     label: 'Cozy hotel bedroom',
   },
   {
-    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1800&q=80',
+    image: '/hero5.png',
     label: 'Luxury twin beds',
   },
   {
-    image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1800&q=80',
+    image: '/hero1.png',
     label: 'Spacious guest room',
   },
 ];
@@ -34,7 +34,7 @@ const roomRent = [
     type: 'Single Room',
     price: '900',
     detail: 'Smart choice for solo and business guests.',
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=900&q=80',
+    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=900&q=80',
   },
   {
     type: 'Double Room',
@@ -63,28 +63,28 @@ const facilities = [
 
 const gallery = [
   {
-    title: 'Royal Suite Room',
-    image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=900&q=80',
+    title: 'Spacious Guest Room',
+    image: '/hero1.png',
   },
   {
-    title: 'Premium Bedroom',
-    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=900&q=80',
+    title: 'Warm Bedside Comfort',
+    image: '/hero2.png',
   },
   {
-    title: 'Standard Single',
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=900&q=80',
+    title: 'Suite Room Lounge',
+    image: '/hero3.png',
   },
   {
-    title: 'Comfort Double',
-    image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=900&q=80',
+    title: 'Standard Single Room',
+    image: '/p1.png',
   },
   {
-    title: 'Suite Lounge',
-    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=900&q=80',
+    title: 'Comfort Double Room',
+    image: '/p2.png',
   },
   {
-    title: 'Luxury Twin',
-    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=900&q=80',
+    title: 'Couple Hourly Room',
+    image: '/p3.png',
   },
 ];
 
@@ -93,6 +93,29 @@ const nearbyPlaces = [
   { name: 'Lake View Point', time: '15 min drive' },
   { name: 'Temple Route', time: '20 min drive' },
   { name: 'Business Hub', time: '10 min drive' },
+];
+
+const reviews = [
+  {
+    name: 'Rajesh patel',
+    feedback: 'The rooms were spotless and the staff was incredibly polite. My family had a wonderful and comfortable stay. Great value for money!',
+    image: '/rajesh.jpeg',
+  },
+  {
+    name: 'Avad sharma',
+    feedback: 'Excellent service! The restaurant and travel desk made my business trip very convenient. The booking process was simple and quick.',
+    image: '/avad.png',
+  },
+  {
+    name: 'Ravi rajak',
+    feedback: 'We hosted a small family function here. The event space was arranged beautifully and the food service was exceptionally quick and delicious.',
+    image: '/ravi.png',
+  },
+  {
+    name: 'Fajal khan',
+    feedback: 'A perfect place for a short stay. The check-in was smooth, and the room was very private and cozy. Highly recommended for couples.',
+    image: '/fajal.png',
+  },
 ];
 
 const mapEmbedUrl = `https://maps.google.com/maps?q=Hotel+Visawa+Bhopal&t=&z=16&ie=UTF8&iwloc=&output=embed`;
@@ -111,14 +134,148 @@ function Home() {
 
   return (
     <main className="home">
+      <style>{`
+        /* --- COMPLETE HERO IMAGE RESPONSIVENESS FIX --- */
+
+        /* 1. Set a responsive aspect ratio for the container */
+        .hero-section {
+          aspect-ratio: 16 / 9; /* Reverted to 16:9 to match image ratio */
+          height: auto; /* Let the width determine the height */
+          max-height: 90vh; /* Prevent it from being too tall on very tall screens */
+          width: 100%;
+          padding-top: 80px; /* Add space for the top navigation bar */
+          background-color: #000; /* Fallback for image loading */
+        }
+
+        /* 2. Style the image itself for perfect fitting */
+        .hero-slide img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover; /* Fills the container, may crop slightly on extreme ratios */
+          object-position: center; /* Ensures cropping is centered */
+        }
+
+        .reviews-section {
+          padding: 80px 0;
+          background-color: #111;
+          overflow: hidden;
+        }
+        .reviews-slider {
+          width: 100%;
+          position: relative;
+          margin-top: 40px;
+          -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+          mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+        }
+        .reviews-track {
+          display: flex;
+          width: calc(380px * 8); /* 350px card + 30px gap */
+          animation: scroll 30s linear infinite;
+        }
+        @keyframes scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-380px * 4)); }
+        }
+        .reviews-slider:hover .reviews-track {
+          animation-play-state: paused;
+        }
+        .review-card {
+          width: 350px;
+          flex-shrink: 0;
+          background: #1a1a1a;
+          border: 1px solid rgba(212, 175, 55, 0.2);
+          border-radius: 15px;
+          padding: 30px;
+          margin: 0 15px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          height: 100%;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .review-card:hover {
+          transform: translateY(-10px);
+          box-shadow: 0 15px 40px rgba(212, 175, 55, 0.15);
+        }
+        .review-content p {
+          font-size: 1rem;
+          line-height: 1.6;
+          color: #ccc;
+          margin: 0;
+        }
+        .review-author {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          margin-top: 20px;
+          border-top: 1px solid rgba(212, 175, 55, 0.15);
+          padding-top: 20px;
+        }
+        .review-author img {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid rgba(212, 175, 55, 0.5);
+        }
+        .review-author strong {
+          color: #d4af37;
+          font-weight: 600;
+        }
+
+        /* Manager Welcome Section */
+        .manager-welcome-section {
+          display: flex;
+          align-items: center;
+          gap: 80px;
+          padding: 100px var(--page-padding);
+          background: #0a0a0a;
+          flex-wrap: wrap;
+        }
+        .manager-photo {
+          flex: 1;
+          min-width: 300px;
+          text-align: center;
+          position: relative;
+          padding-bottom: 30px; /* Added padding below the photo */
+        }
+        .manager-photo img {
+          width: 100%;
+          max-width: 350px;
+          border-radius: 15px;
+          box-shadow: 0 25px 50px rgba(0,0,0,0.7), 0 0 30px rgba(212,175,55,0.2);
+          object-fit: cover;
+          aspect-ratio: 4/5;
+          border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        .manager-message {
+          flex: 1.5;
+          min-width: 320px;
+        }
+        .manager-message h2 {
+          font-size: 2.8rem;
+          font-family: Georgia, serif;
+          margin-bottom: 15px;
+          line-height: 1.2;
+        }
+        .manager-message p {
+          font-size: 1.1rem;
+          line-height: 1.7;
+          color: #bbb;
+          margin: 20px 0 30px 0;
+          max-width: 650px;
+        }
+      `}</style>
       <section className="hero-section">
         <div className="hero-slider" aria-hidden="true">
           {heroSlides.map((slide, index) => (
-            <div
+            <picture
               className={`hero-slide ${index === activeSlide ? 'active' : ''}`}
               key={slide.label}
-              style={{ backgroundImage: `url(${slide.image})` }}
-            />
+            >
+              <img src={slide.image} alt={slide.label} />
+            </picture>
           ))}
         </div>
 
@@ -317,7 +474,7 @@ function Home() {
 
       <section className="split-section event-section">
         <img
-          src="https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1000&q=80"
+          src="/hero6.png"
           alt="Event suite setup"
         />
         <div>
@@ -346,6 +503,28 @@ function Home() {
         </div>
       </section>
 
+      <section className="reviews-section">
+        <div className="section-heading centered">
+          <span className="eyebrow">Testimonials</span>
+          <h2>What Our Guests Say</h2>
+        </div>
+        <div className="reviews-slider" tabIndex="0" aria-label="Guest reviews">
+          <div className="reviews-track">
+            {[...reviews, ...reviews].map((review, index) => (
+              <div className="review-card" key={index}>
+                <div className="review-content">
+                  <p>"{review.feedback}"</p>
+                </div>
+                <div className="review-author">
+                  <img src={review.image} alt={review.name} />
+                  <strong>- {review.name}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="offers-strip">
         <div>
           <span className="eyebrow">Offers</span>
@@ -353,6 +532,20 @@ function Home() {
           <p>Offer cards can be added here later for seasonal promotions.</p>
         </div>
         <Link to="/rooms" className="cta-button">See Rooms</Link>
+      </section>
+
+      <section className="manager-welcome-section">
+        <div className="manager-photo">
+          <img src="/sujeet.png" alt="Hotel Manager" />
+        </div>
+        <div className="manager-message">
+          <span className="eyebrow">A Word From Our Manager</span>
+          <h2>Your Comfort is Our Commitment</h2>
+          <p>
+            "Welcome to Viswa Hotel & Resorts. Our team is dedicated to making your stay exceptional. From our pristine rooms to our dedicated service, we strive to create a memorable experience for every guest. We look forward to hosting you and ensuring your time with us is nothing short of perfect."
+          </p>
+          <strong style={{ color: '#d4af37', fontSize: '1.2rem', fontStyle: 'italic', letterSpacing: '0.5px' }}>- Sujeet Patel, General Manager</strong>
+        </div>
       </section>
 
       <section className="location-section" id="location">
@@ -389,21 +582,6 @@ function Home() {
             referrerPolicy="no-referrer-when-downgrade"
           />
         </a>
-      </section>
-
-      <section className="reviews">
-        <article>
-          <p>"Clean rooms, polite staff, and smooth check-in. Good value for a family stay."</p>
-          <strong>Family Guest</strong>
-        </article>
-        <article>
-          <p>"Restaurant and travel desk made the trip easy. Booking experience was simple."</p>
-          <strong>Business Guest</strong>
-        </article>
-        <article>
-          <p>"Event space was arranged nicely and food service was quick."</p>
-          <strong>Event Guest</strong>
-        </article>
       </section>
 
       <section className="contact-cta" id="contact">
