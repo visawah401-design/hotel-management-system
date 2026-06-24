@@ -17,7 +17,24 @@ router.post('/', optionalAuth, async (req, res) => { // Auth is used to optional
       paymentStatus, razorpayPaymentId, nights,
     } = req.body;
 
-    const newId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
+    // Generate unique booking ID with timestamp to avoid collisions
+    let newId;
+    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (!isUnique && attempts < maxAttempts) {
+      newId = 'VSW-' + Math.floor(100000 + Math.random() * 900000);
+      const existingBooking = await Booking.findOne({ id: newId });
+      if (!existingBooking) {
+        isUnique = true;
+      }
+      attempts++;
+    }
+
+    if (!isUnique) {
+      newId = 'VSW-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
 
     const booking = new Booking({
       id: newId, // Using the same ID format as localStorage

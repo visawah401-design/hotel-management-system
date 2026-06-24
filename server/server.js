@@ -60,7 +60,7 @@ const startServer = async () => {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
-      console.log('Using local JSON database: server/data/local-db.json');
+      console.log('📦 Using MongoDB database only (Production Mode)');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);

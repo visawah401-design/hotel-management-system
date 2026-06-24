@@ -11,9 +11,9 @@ function auth(req, res, next) {
 
   // Verify token
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // Add user from payload
-    req.user = decoded.user;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    // Add user from payload - handle both old format (decoded.user) and new format (decoded.userId)
+    req.user = decoded.user || { id: decoded.userId, role: decoded.role };
     next();
   } catch (e) {
     res.status(400).json({ message: 'Token is not valid' });

@@ -23,7 +23,7 @@ function Bookings() {
   };
 
   const handleCancel = async (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
+    if (window.confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
       try {
         await axios.put(`/api/bookings/${bookingId}/cancel`);
         alert('Booking cancelled successfully');
@@ -35,22 +35,26 @@ function Bookings() {
   };
 
   const handleCheckIn = async (bookingId) => {
-    try {
-      await axios.put(`/api/bookings/${bookingId}/checkin`);
-      alert('Checked in successfully');
-      fetchBookings();
-    } catch (error) {
-      alert('Failed to check in');
+    if (window.confirm('Are you sure you want to check-in now?')) {
+      try {
+        await axios.put(`/api/bookings/${bookingId}/checkin`);
+        alert('Checked in successfully');
+        fetchBookings();
+      } catch (error) {
+        alert('Failed to check in');
+      }
     }
   };
 
   const handleCheckOut = async (bookingId) => {
-    try {
-      await axios.put(`/api/bookings/${bookingId}/checkout`);
-      alert('Checked out successfully');
-      fetchBookings();
-    } catch (error) {
-      alert('Failed to check out');
+    if (window.confirm('Are you sure you want to check-out now?')) {
+      try {
+        await axios.put(`/api/bookings/${bookingId}/checkout`);
+        alert('Checked out successfully');
+        fetchBookings();
+      } catch (error) {
+        alert('Failed to check out');
+      }
     }
   };
 
@@ -68,41 +72,41 @@ function Bookings() {
           {bookings.map((booking) => (
             <div key={booking._id} className="booking-card">
               <div className="booking-header">
-                <h3>Booking ID: {booking.bookingId}</h3>
+                <h3>Booking ID: {booking.id}</h3>
                 <span className={`status ${booking.status.toLowerCase()}`}>
                   {booking.status}
                 </span>
               </div>
               <div className="booking-details">
                 <p>
-                  <strong>Room:</strong> {booking.roomId?.roomNumber} ({booking.roomId?.roomType})
+                  <strong>Room:</strong> {booking.room}
                 </p>
                 <p>
-                  <strong>Check-in:</strong> {new Date(booking.checkInDate).toLocaleDateString()}
+                  <strong>Check-in:</strong> {booking.checkIn}
                 </p>
                 <p>
-                  <strong>Check-out:</strong> {new Date(booking.checkOutDate).toLocaleDateString()}
+                  <strong>Check-out:</strong> {booking.checkOut}
                 </p>
                 <p>
-                  <strong>Guests:</strong> {booking.numberOfGuests}
+                  <strong>Guests:</strong> {booking.guests}
                 </p>
                 <p>
-                  <strong>Total Price:</strong> ₹{booking.totalPrice}
+                  <strong>Total Price:</strong> ₹{booking.totalAmount}
                 </p>
               </div>
               <div className="booking-actions">
                 {booking.status === 'Pending' && (
                   <>
-                    <button className="btn-checkin" onClick={() => handleCheckIn(booking._id)}>
+                    <button className="btn-checkin" onClick={() => handleCheckIn(booking.id)}>
                       Check-in
                     </button>
-                    <button className="btn-cancel" onClick={() => handleCancel(booking._id)}>
+                    <button className="btn-cancel" onClick={() => handleCancel(booking.id)}>
                       Cancel
                     </button>
                   </>
                 )}
                 {booking.status === 'Checked-In' && (
-                  <button className="btn-checkout" onClick={() => handleCheckOut(booking._id)}>
+                  <button className="btn-checkout" onClick={() => handleCheckOut(booking.id)}>
                     Check-out
                   </button>
                 )}

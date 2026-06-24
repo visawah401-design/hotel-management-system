@@ -8,6 +8,7 @@ function Login({ setIsLoggedIn, setUserRole }) {
     password: '',
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,6 +54,7 @@ function Login({ setIsLoggedIn, setUserRole }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
       // Check for Guest Portal login first (by ID format)
@@ -83,7 +85,7 @@ function Login({ setIsLoggedIn, setUserRole }) {
         navigate('/');
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Login failed');
+      setError(error.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -100,6 +102,11 @@ function Login({ setIsLoggedIn, setUserRole }) {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', fontFamily: 'sans-serif' }}>
+          {error && (
+            <div style={{ background: 'rgba(231, 76, 60, 0.15)', border: '1px solid #e74c3c', color: '#ff6b6b', padding: '12px 15px', borderRadius: '8px', fontSize: '0.9rem', textAlign: 'center' }}>
+              {error}
+            </div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <label style={{ color: '#ccc', fontSize: '0.85rem', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>Certificate ID / Admin Username</label>
             <input

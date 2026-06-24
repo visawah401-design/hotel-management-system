@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import './Admin.css';
-import { getApiUrl } from '../api';
+import { getApiUrl, apiClient } from '../api';
 
 const toLocalDateTimeInput = (date) => {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -12,6 +13,203 @@ const addDays = (date, days) => {
   const nextDate = new Date(date);
   nextDate.setDate(nextDate.getDate() + days);
   return nextDate;
+};
+
+// Custom Date Time Picker Component
+const DateTimePicker = ({ value, onChange, label = "Select Date & Time" }) => {
+  const [showPicker, setShowPicker] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date(value || new Date()));
+  const [selectedTime, setSelectedTime] = useState({
+    hour: new Date(value || new Date()).getHours().toString().padStart(2, '0'),
+    minute: new Date(value || new Date()).getMinutes().toString().padStart(2, '0')
+  });
+
+  const handleDateSelect = (day) => {
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    newDate.setHours(parseInt(selectedTime.hour), parseInt(selectedTime.minute));
+    onChange(toLocalDateTimeInput(newDate));
+  };
+
+  const handleTimeChange = (field, val) => {
+    const updatedTime = { ...selectedTime, [field]: val.toString().padStart(2, '0') };
+    setSelectedTime(updatedTime);
+    const newDate = new Date(currentDate);
+    newDate.setHours(parseInt(updatedTime.hour), parseInt(updatedTime.minute));
+    onChange(toLocalDateTimeInput(newDate));
+  };
+
+  const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+
+  const days = [];
+  const firstDay = getFirstDayOfMonth(currentDate);
+  const daysInMonth = getDaysInMonth(currentDate);
+  
+  for (let i = 0; i < firstDay; i++) days.push(null);
+  for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const displayDate = new Date(value || currentDate);
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <button
+        type="button"
+        onClick={() => setShowPicker(!showPicker)}
+        style={{
+          width: '100%',
+          padding: '13px',
+          borderRadius: '6px',
+          border: '1px solid #444',
+          background: '#111',
+          color: '#fff',
+          textAlign: 'left',
+          cursor: 'pointer',
+          fontSize: '1rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
+        <span>{displayDate.toLocaleDateString('en-IN')} {displayDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+        <span>📅</span>
+      </button>
+
+      {showPicker && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            background: '#1a1a1a',
+            border: '2px solid #d4af37',
+            borderRadius: '12px',
+            padding: '20px',
+            marginTop: '8px',
+            zIndex: 1000,
+            boxShadow: '0 8px 32px rgba(212, 175, 55, 0.2)',
+            minWidth: '500px',
+            display: 'grid',
+            gridTemplateColumns: '1fr 200px',
+            gap: '20px'
+          }}
+        >
+          {/* Calendar */}
+          <div>
+            {/* Month/Year Controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <button
+                type="button"
+                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+                style={{ background: '#333', color: '#d4af37', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                ← Prev
+              </button>
+              <span style={{ color: '#d4af37', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+                style={{ background: '#333', color: '#d4af37', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                Next →
+              </button>
+            </div>
+
+            {/* Calendar Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '15px' }}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} style={{ textAlign: 'center', color: '#d4af37', fontSize: '0.8rem', fontWeight: 'bold', padding: '5px' }}>
+                  {day}
+                </div>
+              ))}
+              {days.map((day, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => day && handleDateSelect(day)}
+                  disabled={!day}
+                  style={{
+                    padding: '10px',
+                    background: day === currentDate.getDate() && currentDate.getMonth() === new Date(value).getMonth() ? '#d4af37' : day ? '#222' : 'transparent',
+                    color: day === currentDate.getDate() && currentDate.getMonth() === new Date(value).getMonth() ? '#111' : '#fff',
+                    border: '1px solid #444',
+                    borderRadius: '4px',
+                    cursor: day ? 'pointer' : 'default',
+                    fontWeight: day === currentDate.getDate() ? 'bold' : 'normal'
+                  }}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time Selector */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', borderLeft: '1px solid #444', paddingLeft: '20px' }}>
+            <h4 style={{ color: '#d4af37', margin: '0 0 10px 0', fontSize: '0.95rem' }}>Time</h4>
+            <div>
+              <label style={{ color: '#ccc', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>Hour</label>
+              <input
+                type="number"
+                min="0"
+                max="23"
+                value={selectedTime.hour}
+                onChange={(e) => handleTimeChange('hour', Math.max(0, Math.min(23, parseInt(e.target.value) || 0)))}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #444',
+                  background: '#111',
+                  color: '#d4af37',
+                  borderRadius: '4px',
+                  fontSize: '1rem',
+                  textAlign: 'center'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ color: '#ccc', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>Minute</label>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={selectedTime.minute}
+                onChange={(e) => handleTimeChange('minute', Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #444',
+                  background: '#111',
+                  color: '#d4af37',
+                  borderRadius: '4px',
+                  fontSize: '1rem',
+                  textAlign: 'center'
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPicker(false)}
+              style={{
+                marginTop: '10px',
+                padding: '10px',
+                background: '#d4af37',
+                color: '#111',
+                border: 'none',
+                borderRadius: '4px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 function Admin() {
@@ -43,8 +241,8 @@ function Admin() {
     address: '',
     roomType: 'Standard Room',
     roomNumber: '',
-    checkInDate: '',
-    checkOutDate: '',
+    checkInDate: defaultCheckIn,
+    checkOutDate: defaultCheckOut,
     durationValue: 1,
     durationUnit: 'Days',
     guests: 1,
@@ -134,7 +332,7 @@ function Admin() {
 
       // Step 2: Open Razorpay Checkout
       const options = {
-        key: 'rzp_test_T17mWs6lrO5aNR', // Your Razorpay Key ID
+        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_T17mWs6lrO5aNR', // Your Razorpay Key ID
         amount: Math.round(amount * 100), // Amount in paise
         currency: 'INR',
         name: 'Viswa Hotel & Resorts',
@@ -275,10 +473,11 @@ function Admin() {
       const now = new Date();
       const currentTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       try {
-        const res = await axios.put(`/api/bookings/${id}/checkin`, { actualCheckIn: currentTime });
+        const res = await apiClient.put(`/api/bookings/${id}/checkin`, { actualCheckIn: currentTime });
         setBookings(bookings.map(b => b.id === id ? res.data : b));
+        toast.success('✅ Guest checked-in successfully!');
       } catch (error) {
-        alert('Failed to check-in guest.');
+        toast.error('Failed to check-in guest. ' + (error.response?.data?.message || error.message));
       }
     }
   };
@@ -288,10 +487,11 @@ function Admin() {
       const now = new Date();
       const currentTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       try {
-        const res = await axios.put(`/api/bookings/${id}/checkout`, { actualCheckOut: currentTime });
+        const res = await apiClient.put(`/api/bookings/${id}/checkout`, { actualCheckOut: currentTime });
         setBookings(bookings.map(b => b.id === id ? res.data : b));
+        toast.success('🚪 Guest checked-out successfully!');
       } catch (error) {
-        alert('Failed to check-out guest.');
+        toast.error('Failed to check-out guest. ' + (error.response?.data?.message || error.message));
       }
     }
   };
@@ -980,7 +1180,8 @@ function Admin() {
                   <th style={{ padding: '15px 20px' }}>Booking ID</th>
                   <th style={{ padding: '15px 20px' }}>Guest Name</th>
                   <th style={{ padding: '15px 20px' }}>Room details</th>
-                  <th style={{ padding: '15px 20px' }}>Check-In</th>
+                  <th style={{ padding: '15px 20px' }}>Check-In Time</th>
+                  <th style={{ padding: '15px 20px' }}>Check-Out Time</th>
                   <th style={{ padding: '15px 20px' }}>Status</th>
                   <th style={{ padding: '15px 20px' }}>Amount</th>
                   <th style={{ padding: '15px 20px', textAlign: 'center' }}>Quick Action</th>
@@ -992,7 +1193,8 @@ function Admin() {
                     <td style={{ padding: '15px 20px', fontFamily: 'monospace', color: '#fff' }}>{booking.id}</td>
                     <td style={{ padding: '15px 20px' }}>{booking.name}</td>
                     <td style={{ padding: '15px 20px' }}>{booking.room}</td>
-                    <td style={{ padding: '15px 20px' }}>{booking.checkIn}</td>
+                    <td style={{ padding: '15px 20px', fontSize: '0.85rem', color: '#2ecc71', fontWeight: 'bold' }}>{booking.actualCheckIn || booking.checkIn}</td>
+                    <td style={{ padding: '15px 20px', fontSize: '0.85rem', color: '#e74c3c', fontWeight: 'bold' }}>{booking.actualCheckOut || 'Pending'}</td>
                     <td style={{ padding: '15px 20px' }}>
                       {(() => {
                         const st = booking.status || (booking.actualCheckOut ? 'Checked-Out' : 'Checked-In');
@@ -1020,7 +1222,7 @@ function Admin() {
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan="7" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No recent bookings found.</td></tr>
+                  <tr><td colSpan="9" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No recent bookings found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1560,7 +1762,7 @@ function Admin() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold' }}>Check-In Date & Time *</label>
-                <input type="datetime-local" required value={multiBookingData.checkIn} onChange={(e) => setMultiBookingData({...multiBookingData, checkIn: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+                <DateTimePicker value={multiBookingData.checkIn} onChange={(newDateTime) => setMultiBookingData({...multiBookingData, checkIn: newDateTime})} label="Select Check-in Date & Time" />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1568,7 +1770,7 @@ function Admin() {
                   <label style={{ color: '#ccc', fontSize: '0.9rem', fontWeight: 'bold', margin: 0 }}>Check-Out Date & Time *</label>
                   <span style={{ color: '#27ae60', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(39,174,96,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{multiNightCount} Night(s)</span>
                 </div>
-                <input type="datetime-local" required value={multiBookingData.checkOut} onChange={(e) => setMultiBookingData({...multiBookingData, checkOut: e.target.value})} style={{ padding: '14px', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', outline: 'none', fontSize: '1rem', colorScheme: 'dark' }} />
+                <DateTimePicker value={multiBookingData.checkOut} onChange={(newDateTime) => setMultiBookingData({...multiBookingData, checkOut: newDateTime})} label="Select Check-out Date & Time" />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1765,7 +1967,7 @@ function Admin() {
                 </label>
                 <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   Check-in *
-                  <input type="datetime-local" required value={entryData.checkInDate} onChange={e => setEntryData({ ...entryData, checkInDate: e.target.value })} style={{ padding: '13px', borderRadius: '6px', border: '1px solid #444', background: '#111', color: '#fff', colorScheme: 'dark' }} />
+                  <DateTimePicker value={entryData.checkInDate} onChange={(newDateTime) => setEntryData({ ...entryData, checkInDate: newDateTime })} label="Select Check-in Date & Time" />
                 </label>
                 <label style={{ color: '#ccc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   Stay Duration *
@@ -1919,12 +2121,10 @@ function Admin() {
                       <tr style={{ borderBottom: '1px solid #ddd' }}>
                         <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222' }}>1</td>
                         <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222' }}>
-                          Accommodation Services - {selectedBooking.room}
-                          {selectedBooking.roomRate != null && <div style={{ marginTop: '4px', color: '#666', fontSize: '0.8rem' }}>Rs. {Number(selectedBooking.roomRate).toFixed(2)} × {selectedBooking.roomCount || 1} room(s) × {selectedBooking.nights || 1} night(s)</div>}
+                          Accommodation & Other Services
                         </td>
-                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'center' }}>996311</td>
                         <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'center' }}>{selectedBooking.roomCount || 1}</td>
-                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'right' }}>{((Number(selectedBooking.totalAmount) || 0) / 1.12).toFixed(2)}</td>
+                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#222', textAlign: 'right' }}>{Number(selectedBooking.totalAmount).toFixed(2)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1942,15 +2142,11 @@ function Admin() {
                             <p style={{ margin: '8px 0 0 0', fontSize: '0.7rem', color: '#666', fontFamily: 'monospace', fontWeight: 'bold' }}>paytm.s2e65rl@pty</p>
                           </div>
                           <div style={{ borderLeft: '1px dashed #ccc', paddingLeft: '25px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <p style={{ margin: '0 0 12px 0', fontSize: '0.8rem', color: '#111', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Bank Transfer Details</p>
-                            <table style={{ fontSize: '0.8rem', color: '#333', borderCollapse: 'collapse', textAlign: 'left' }}>
-                              <tbody>
-                                <tr><td style={{ padding: '0 15px 6px 0', color: '#777' }}>Bank:</td><td style={{ padding: '0 0 6px 0' }}><strong>HDFC Bank Ltd.</strong></td></tr>
-                                <tr><td style={{ padding: '0 15px 6px 0', color: '#777' }}>A/C Name:</td><td style={{ padding: '0 0 6px 0' }}><strong>Garud Stacks Pvt. Ltd.</strong></td></tr>
-                                <tr><td style={{ padding: '0 15px 6px 0', color: '#777' }}>A/C No:</td><td style={{ padding: '0 0 6px 0', fontFamily: 'monospace', fontSize: '0.9rem' }}><strong>50200012345678</strong></td></tr>
-                                <tr><td style={{ padding: '0 15px 0 0', color: '#777' }}>IFSC Code:</td><td style={{ padding: 0, fontFamily: 'monospace', fontSize: '0.9rem' }}><strong>HDFC0001234</strong></td></tr>
-                              </tbody>
-                            </table>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#111', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Bank Details</p>
+                            <p style={{ margin: '8px 0 0 0', fontSize: '0.85rem', color: '#333', lineHeight: '1.5' }}>
+                              <strong>A/C:</strong> 50200012345678<br/>
+                              <strong>IFSC:</strong> HDFC0001234
+                            </p>
                           </div>
                         </div>
                       ) : (
@@ -1964,18 +2160,6 @@ function Admin() {
                     <div style={{ width: '42%' }}>
                       <table style={{ width: '100%', fontSize: '0.95rem', color: '#222' }}>
                         <tbody>
-                          <tr>
-                            <td style={{ padding: '6px', textAlign: 'right' }}><strong>Taxable Amount:</strong></td>
-                            <td style={{ padding: '6px', textAlign: 'right', width: '140px' }}>₹{((Number(selectedBooking.totalAmount) || 0) / 1.12).toFixed(2)}</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '6px', textAlign: 'right' }}><strong>CGST @ 6%:</strong></td>
-                            <td style={{ padding: '6px', textAlign: 'right' }}>₹{(((Number(selectedBooking.totalAmount) || 0) - (Number(selectedBooking.totalAmount) || 0) / 1.12) / 2).toFixed(2)}</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '6px', textAlign: 'right', borderBottom: '2px solid #333' }}><strong>SGST @ 6%:</strong></td>
-                            <td style={{ padding: '6px', textAlign: 'right', borderBottom: '2px solid #333' }}>₹{(((Number(selectedBooking.totalAmount) || 0) - (Number(selectedBooking.totalAmount) || 0) / 1.12) / 2).toFixed(2)}</td>
-                          </tr>
                           <tr>
                             <td style={{ padding: '10px 8px', textAlign: 'right', fontSize: '1.1rem' }}><strong>Grand Total:</strong></td>
                             <td style={{ padding: '10px 8px', textAlign: 'right', fontSize: '1.1rem' }}><strong>₹{Number(selectedBooking.totalAmount).toFixed(2)}</strong></td>

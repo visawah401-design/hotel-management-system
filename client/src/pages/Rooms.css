@@ -12,9 +12,14 @@
 
 .rooms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  /* यह एक रिस्पॉन्सिव ग्रिड बनाता है। हर कार्ड कम से कम 350px का होगा। */
+  /* बड़ी स्क्रीन पर यह अपने आप 3 कॉलम बना देगा। */
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 2rem;
   margin-bottom: 2rem;
+  max-width: 1200px; /* ग्रिड को बहुत ज़्यादा फैलने से रोकता है */
+  margin-left: auto; /* ग्रिड को पेज के बीच में रखता है */
+  margin-right: auto; /* ग्रिड को पेज के बीच में रखता है */
 }
 
 .modal-overlay {

@@ -6,71 +6,117 @@ import toast from 'react-hot-toast';
 
 // Naye Room Cards jo UI mein automatically dikhenge
 const defaultRooms = [
+  // Floor 1
   {
-    _id: 'dummy_1',
+    _id: 'dummy_101',
     roomNumber: '101',
     roomType: 'Standard Single Room',
     capacity: 1,
     pricePerNight: 900,
     status: 'Available',
     description: 'A cozy and affordable room, perfect for solo travelers.',
-    amenities: ['Free WiFi', 'AC', 'TV', 'Room Service'],
+    amenities: ['Free WiFi', 'AC', 'Smart TV', 'Room Service'],
     image: '/p1.png'
   },
   {
-    _id: 'dummy_2',
+    _id: 'dummy_102',
     roomNumber: '102',
     roomType: 'Comfort Double Room',
     capacity: 2,
     pricePerNight: 1150,
     status: 'Available',
     description: 'Spacious double room, perfectly comfortable for couples or two guests.',
-    amenities: ['Free WiFi', 'AC', 'Balcony', 'Restaurant', 'Smart TV'],
+    amenities: ['Free WiFi', 'AC', 'Balcony', 'Restaurant'],
     image: '/p2.png'
   },
   {
-    _id: 'dummy_3',
+    _id: 'dummy_103',
     roomNumber: '103',
     roomType: 'Couple Hourly (3-4 Hrs)',
     capacity: 2,
     pricePerNight: 600,
     status: 'Available',
     description: 'Short stay room. Perfect for resting and absolute privacy for 3-4 hours.',
-    amenities: ['Free WiFi', 'AC', 'Shower', 'Total Privacy', 'In-room Dining'],
+    amenities: ['AC', 'Shower', 'Total Privacy', 'In-room Dining'],
     image: '/p3.png'
   },
   {
-    _id: 'dummy_4',
+    _id: 'dummy_104',
     roomNumber: '104',
     roomType: 'Premium Double',
     capacity: 3,
     pricePerNight: 1150,
     status: 'Available',
     description: 'Extra space with an additional bed, ideal for small families.',
-    amenities: ['Free WiFi', 'AC', 'Mini Bar', 'Restaurant', 'Room Service'],
+    amenities: ['Free WiFi', 'AC', 'Mini Bar', 'Restaurant'],
     image: '/p4.png'
   },
   {
-    _id: 'dummy_5',
+    _id: 'dummy_105',
     roomNumber: '105',
     roomType: 'Deluxe Suite',
     capacity: 2,
     pricePerNight: 1150,
     status: 'Available',
     description: 'Luxury experience with a spacious living area and premium amenities.',
-    amenities: ['AC', 'Jacuzzi', 'Balcony', 'Restaurant', 'Hot Water', 'Room Service'],
+    amenities: ['AC', 'Jacuzzi', 'Balcony', 'Restaurant', 'Hot Water'],
     image: '/p5.png'
   },
+  // Floor 2
   {
-    _id: 'dummy_6',
-    roomNumber: '106',
+    _id: 'dummy_201',
+    roomNumber: '201',
     roomType: 'Standard Single Room',
     capacity: 1,
     pricePerNight: 900,
     status: 'Available',
     description: 'A cozy and affordable room, perfect for solo travelers.',
-    amenities: ['Free WiFi', 'AC', 'Smart TV', 'Water Cooler', 'Restaurant Menu'],
+    amenities: ['Free WiFi', 'AC', 'Smart TV', 'Room Service'],
     image: '/p6.png'
+  },
+  {
+    _id: 'dummy_202',
+    roomNumber: '202',
+    roomType: 'Comfort Double Room',
+    capacity: 2,
+    pricePerNight: 1150,
+    status: 'Available',
+    description: 'Spacious double room, perfectly comfortable for couples or two guests.',
+    amenities: ['Free WiFi', 'AC', 'Balcony', 'Restaurant'],
+    image: '/hero2.png'
+  },
+  {
+    _id: 'dummy_203',
+    roomNumber: '203',
+    roomType: 'Couple Hourly (3-4 Hrs)',
+    capacity: 2,
+    pricePerNight: 600,
+    status: 'Available',
+    description: 'Short stay room. Perfect for resting and absolute privacy for 3-4 hours.',
+    amenities: ['AC', 'Shower', 'Total Privacy', 'In-room Dining'],
+    image: '/hero3.png'
+  },
+  {
+    _id: 'dummy_204',
+    roomNumber: '204',
+    roomType: 'Premium Double',
+    capacity: 3,
+    pricePerNight: 1150,
+    status: 'Available',
+    description: 'Extra space with an additional bed, ideal for small families.',
+    amenities: ['Free WiFi', 'AC', 'Mini Bar', 'Restaurant'],
+    image: '/hero4.png'
+  },
+  {
+    _id: 'dummy_205',
+    roomNumber: '205',
+    roomType: 'Deluxe Suite',
+    capacity: 2,
+    pricePerNight: 1150,
+    status: 'Available',
+    description: 'Luxury experience with a spacious living area and premium amenities.',
+    amenities: ['AC', 'Jacuzzi', 'Balcony', 'Restaurant', 'Hot Water'],
+    image: '/hero5.png'
   }
 ];
 
@@ -350,6 +396,7 @@ function Rooms({ isLoggedIn }) {
         const response = await axios.post('/api/bookings', newBookingData);
         const savedBooking = response.data;
 
+        toast.success(`Booking Confirmed! ID: ${savedBooking.id}`);
         showSuccessModal(savedBooking);
         setSelectedRoom(null);
         fetchRooms();
@@ -653,8 +700,8 @@ function Rooms({ isLoggedIn }) {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={labelStyle}>Scan ID (Front & Back) *</label>
-                    <input type="file" required multiple accept="image/*,.pdf" capture="environment" style={{ ...inputStyle, padding: '11px 14px', cursor: 'pointer', color: '#555' }} title="Scan Front and Back of Document" />
+                    <label style={labelStyle}>Scan ID (Front & Back)</label>
+                    <input type="file" multiple accept="image/*,.pdf" capture="environment" style={{ ...inputStyle, padding: '11px 14px', cursor: 'pointer', color: '#555' }} title="Scan Front and Back of Document" />
                   </div>
                 </div>
 
