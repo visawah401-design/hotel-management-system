@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const createModel = require('./modelFactory');
 
 const facilitySchema = new mongoose.Schema(
   {
@@ -24,4 +25,4 @@ const facilitySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Facility', facilitySchema);
+module.exports = createModel('Facility', facilitySchema);

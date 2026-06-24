@@ -55,12 +55,12 @@ app.use((err, req, res, next) => {
 // Connect to MongoDB and start server
 const startServer = async () => {
   try {
-    // Connect to MongoDB
     await connectDB();
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
+      console.log('Using local JSON database: server/data/local-db.json');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);

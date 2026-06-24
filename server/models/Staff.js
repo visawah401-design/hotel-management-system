@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const createModel = require('./modelFactory');
 
 const staffSchema = new mongoose.Schema({
   staffId: { type: String, required: true, unique: true },

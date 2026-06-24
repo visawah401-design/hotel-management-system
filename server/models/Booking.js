@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const createModel = require('./modelFactory');
 
 const bookingSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

@@ -132,7 +132,21 @@ function normalizeId(value) {
 }
 
 function matches(doc, filter = {}) {
-  return Object.entries(filter).every(([key, value]) => normalizeId(doc[key]) === normalizeId(value));
+  return Object.entries(filter).every(([key, value]) => {
+    const docValue = doc[key];
+
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      if (value.$in) {
+        return value.$in.some((candidate) => normalizeId(docValue) === normalizeId(candidate));
+      }
+
+      if (value.$ne) {
+        return normalizeId(docValue) !== normalizeId(value.$ne);
+      }
+    }
+
+    return normalizeId(docValue) === normalizeId(value);
+  });
 }
 
 function stripFields(doc, fields) {
@@ -182,6 +196,7 @@ class LocalQuery {
     this.executor = executor;
     this.selectFields = null;
     this.populateCalls = [];
+    this.sortSpec = null;
   }
 
   select(fields) {
@@ -194,13 +209,38 @@ class LocalQuery {
     return this;
   }
 
+  sort(sortSpec = {}) {
+    this.sortSpec = sortSpec;
+    return this;
+  }
+
   async exec() {
     const store = readStore();
     const result = await this.executor(store);
     const applyTransforms = (doc) => stripFields(populateDoc(doc, this.populateCalls, store), this.selectFields);
 
+    const applySorting = (docs) => {
+      if (!this.sortSpec || !Object.keys(this.sortSpec).length) {
+        return docs;
+      }
+
+      return [...docs].sort((a, b) => {
+        for (const [field, direction] of Object.entries(this.sortSpec)) {
+          const valueA = a[field];
+          const valueB = b[field];
+          const factor = direction === -1 ? -1 : 1;
+          if (valueA === valueB) continue;
+          if (valueA == null) return 1;
+          if (valueB == null) return -1;
+          if (valueA < valueB) return -1 * factor;
+          if (valueA > valueB) return 1 * factor;
+        }
+        return 0;
+      });
+    };
+
     if (Array.isArray(result)) {
-      return result.map(applyTransforms);
+      return applyTransforms ? applySorting(result.map(applyTransforms)) : applySorting(result);
     }
 
     return result ? applyTransforms(result) : result;
@@ -290,6 +330,26 @@ function createLocalModel(modelName, defaults = {}) {
         const [removed] = store[collection].splice(index, 1);
         writeStore(store);
         return clone(removed);
+      });
+    }
+
+    static findOneAndUpdate(filter = {}, update = {}, options = {}) {
+      return new LocalQuery(() => {
+        const store = readStore();
+        const index = store[collection].findIndex((item) => matches(item, filter));
+        if (index === -1) return null;
+
+        const previous = clone(store[collection][index]);
+        store[collection][index] = {
+          ...store[collection][index],
+          ...clone(update),
+          _id: store[collection][index]._id,
+          id: store[collection][index]._id,
+          updatedAt: new Date().toISOString(),
+        };
+        writeStore(store);
+
+        return options.new === false ? previous : clone(store[collection][index]);
       });
     }
   };

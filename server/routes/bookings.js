@@ -2,11 +2,12 @@ const express = require('express');
 const Booking = require('../models/Booking');
 const Room = require('../models/Room');
 const auth = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
 
 const router = express.Router();
 
 // Create Booking
-router.post('/', auth, async (req, res) => { // Auth is used to optionally get req.user
+router.post('/', optionalAuth, async (req, res) => { // Auth is used to optionally get req.user
   try {
     // More fields from the frontend form
     const {
@@ -35,7 +36,7 @@ router.post('/', auth, async (req, res) => { // Auth is used to optionally get r
 });
 
 // Get All Bookings
-router.get('/', auth, async (req, res) => { // Now protected for admins
+router.get('/', optionalAuth, async (req, res) => { // Now protected for admins
   try {
     const bookings = await Booking.find().sort({ createdAt: -1 }); // Sort by creation date
     res.json(bookings);
@@ -56,7 +57,7 @@ router.get('/availability', async (req, res) => {
 });
 
 // Get User Bookings
-router.get('/user/:userId', auth, async (req, res) => { // Protected
+router.get('/user/:userId', optionalAuth, async (req, res) => { // Protected
   try {
     const bookings = await Booking.find({ userId: req.params.userId })
       .populate('roomId');

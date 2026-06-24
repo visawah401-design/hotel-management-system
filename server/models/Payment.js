@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const createModel = require('./modelFactory');
 
 const paymentSchema = new mongoose.Schema(
   {
@@ -31,4 +32,4 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Payment', paymentSchema);
+module.exports = createModel('Payment', paymentSchema);

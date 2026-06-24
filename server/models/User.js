@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const createModel = require('./modelFactory');
 
 const userSchema = new mongoose.Schema(
   {
@@ -42,4 +43,4 @@ userSchema.methods.toJSON = function () {
   return rest;
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = createModel('User', userSchema);

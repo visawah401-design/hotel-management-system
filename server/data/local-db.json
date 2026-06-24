@@ -1,5 +1,15 @@
 {
-  "users": [],
+  "users": [
+    {
+      "name": "Fallback User",
+      "email": "fallback@example.com",
+      "password": "123456",
+      "_id": "57855090-adc0-4c4b-87b7-d5a09c5e66a5",
+      "id": "57855090-adc0-4c4b-87b7-d5a09c5e66a5",
+      "createdAt": "2026-06-24T04:31:30.271Z",
+      "updatedAt": "2026-06-24T04:31:30.271Z"
+    }
+  ],
   "rooms": [
     {
       "_id": "room-single-101",

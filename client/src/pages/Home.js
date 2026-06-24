@@ -267,14 +267,14 @@ function Home() {
           max-width: 650px;
         }
       `}</style>
-      <section className="hero-section">
+      <section className="hero-section" aria-labelledby="hero-title">
         <div className="hero-slider" aria-hidden="true">
           {heroSlides.map((slide, index) => (
             <picture
               className={`hero-slide ${index === activeSlide ? 'active' : ''}`}
               key={slide.label}
             >
-              <img src={slide.image} alt={slide.label} />
+              <img src={slide.image} alt={slide.label} loading="eager" decoding="async" width="1600" height="900" />
             </picture>
           ))}
         </div>
@@ -284,7 +284,7 @@ function Home() {
         <div className="hero-inner">
           <div className="hero-content">
             <span className="hero-kicker">Premium stay, warm comfort</span>
-            <h1>Rooms, dining, events, and easy booking.</h1>
+            <h1 id="hero-title">Luxury hotel stays, dining, and events in Bhopal.</h1>
             <p>
               Elegant rooms, fresh dining, celebration spaces, and caring service for every visit.
             </p>
@@ -322,7 +322,7 @@ function Home() {
         </div>
       </section>
 
-      <section className="booking-strip" aria-label="Quick booking">
+      <form className="booking-strip" aria-label="Quick booking form">
         <label>
           Check in
           <input type="date" />
@@ -340,64 +340,64 @@ function Home() {
           </select>
         </label>
         <Link to="/rooms" className="panel-button">Check Availability</Link>
+      </form>
+
+      <section className="quick-stats" aria-label="Hotel highlights" role="list">
+        <div role="listitem"><strong>24/7</strong><span>Guest Support</span></div>
+        <div role="listitem"><strong>35+</strong><span>Ready Rooms</span></div>
+        <div role="listitem"><strong>4.8</strong><span>Guest Rating</span></div>
+        <div role="listitem"><strong>10 min</strong><span>City Center</span></div>
       </section>
 
-      <section className="quick-stats" aria-label="Hotel highlights">
-        <div><strong>24/7</strong><span>Guest Support</span></div>
-        <div><strong>35+</strong><span>Ready Rooms</span></div>
-        <div><strong>4.8</strong><span>Guest Rating</span></div>
-        <div><strong>10 min</strong><span>City Center</span></div>
-      </section>
-
-      <section className="intro-section">
+      <section className="intro-section" aria-labelledby="about-heading">
         <div className="intro-showcase">
           <span className="intro-ring" aria-hidden="true"></span>
-          <img src="/logo.png" alt="Visawa Hotel & Resorts logo" />
+          <img src="/logo.png" alt="Visawa Hotel & Resorts logo" loading="eager" decoding="async" width="96" height="96" />
           <strong>Visawa</strong>
           <small>Hotel & Resorts</small>
         </div>
         <div className="intro-content">
           <span className="eyebrow">Welcome To Visawa</span>
-          <h2>Stay, dine, celebrate, and travel with ease.</h2>
+          <h2 id="about-heading">Stay, dine, celebrate, and travel with ease.</h2>
           <p>
             Visawa brings clean rooms, fresh dining, event spaces, and local travel help together
             in one welcoming place near 30, Zone-II, Maharana Pratap Nagar, Bhopal.
           </p>
           <div className="intro-points" aria-label="Visawa hotel highlights">
-            <div>
+            <article>
               <span>01</span>
               <strong>Rest Easy</strong>
               <p>Clean rooms and calm comfort.</p>
-            </div>
-            <div>
+            </article>
+            <article>
               <span>02</span>
               <strong>Dine Well</strong>
               <p>Fresh meals for every mood.</p>
-            </div>
-            <div>
+            </article>
+            <article>
               <span>03</span>
               <strong>Celebrate</strong>
               <p>Spaces for special moments.</p>
-            </div>
-            <div className="mobile-only-card">
+            </article>
+            <article className="mobile-only-card">
               <span>04</span>
               <strong>Travel Easy</strong>
               <p>Local support when you need it.</p>
-            </div>
+            </article>
           </div>
         </div>
       </section>
 
-      <section className="section-block" id="facilities">
+      <section className="section-block" id="facilities" aria-labelledby="rooms-heading">
         <div className="section-heading centered">
           <span className="eyebrow">Rooms & Rent</span>
-          <h2>Simple room choices with clear starting prices</h2>
+          <h2 id="rooms-heading">Simple room choices with clear starting prices</h2>
           <p>Pick the room type, check availability, and complete booking from the rooms page.</p>
         </div>
         <div className="rent-grid">
           {roomRent.map((room) => (
             <article className="rent-card" key={room.type}>
-              <img src={room.image} alt={room.type} />
+              <img src={room.image} alt={room.type} loading="lazy" decoding="async" width="900" height="600" />
               <div>
                 <h3>{room.type}</h3>
                 <p>{room.detail}</p>
@@ -415,10 +415,10 @@ function Home() {
         </div>
       </section>
 
-      <section className="video-tour" id="video-tour">
+      <section className="video-tour" id="video-tour" aria-labelledby="video-tour-heading">
         <div className="video-copy">
           <span className="eyebrow">Video Tour</span>
-          <h2>Let guests see the property before they book.</h2>
+          <h2 id="video-tour-heading">Let guests see the property before they book.</h2>
           <p>
             Add your real hotel video here later. This area is placed right after rooms
             because visitors usually want to inspect rooms, lobby, dining, and outdoor space.
@@ -430,10 +430,10 @@ function Home() {
         </div>
       </section>
 
-      <section className="section-block" id="gallery">
+      <section className="section-block" id="gallery" aria-labelledby="facilities-heading">
         <div className="section-heading centered">
           <span className="eyebrow">Facilities</span>
-          <h2>Everything important, arranged clearly</h2>
+          <h2 id="facilities-heading">Everything important, arranged clearly</h2>
         </div>
         <div className="facility-grid">
           {facilities.map((facility) => (
@@ -454,6 +454,10 @@ function Home() {
         <img
           src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1000&q=80"
           alt="Restaurant dining"
+          loading="lazy"
+          decoding="async"
+          width="1000"
+          height="700"
         />
       </section>
 
@@ -465,7 +469,7 @@ function Home() {
         <div className="gallery-grid">
           {gallery.map((item) => (
             <figure className="gallery-card" key={item.title}>
-              <img src={item.image} alt={item.title} />
+              <img src={item.image} alt={item.title} loading="lazy" decoding="async" width="800" height="600" />
               <figcaption>{item.title}</figcaption>
             </figure>
           ))}
@@ -476,6 +480,10 @@ function Home() {
         <img
           src="/hero6.png"
           alt="Event suite setup"
+          loading="lazy"
+          decoding="async"
+          width="1000"
+          height="700"
         />
         <div>
           <span className="eyebrow">Events & Functions</span>
@@ -493,9 +501,9 @@ function Home() {
           <h2>Ghoomne ki jagah aur travel support</h2>
           <p>Airport pickup, railway station drop, local cab booking, market trip, and city tour details yahan rakhenge.</p>
         </div>
-        <div className="guide-list">
+        <div className="guide-list" role="list" aria-label="Nearby attractions and travel support">
           {nearbyPlaces.map((place) => (
-            <div key={place.name}>
+            <div key={place.name} role="listitem">
               <strong>{place.name}</strong>
               <span>{place.time}</span>
             </div>
@@ -516,7 +524,7 @@ function Home() {
                   <p>"{review.feedback}"</p>
                 </div>
                 <div className="review-author">
-                  <img src={review.image} alt={review.name} />
+                  <img src={review.image} alt={review.name} loading="lazy" decoding="async" width="60" height="60" />
                   <strong>- {review.name}</strong>
                 </div>
               </div>
@@ -534,13 +542,13 @@ function Home() {
         <Link to="/rooms" className="cta-button">See Rooms</Link>
       </section>
 
-      <section className="manager-welcome-section">
+      <section className="manager-welcome-section" aria-labelledby="manager-heading">
         <div className="manager-photo">
-          <img src="/sujeet.png" alt="Hotel Manager" />
+          <img src="/sujeet.png" alt="Hotel Manager Sujeet Patel" loading="lazy" decoding="async" width="500" height="600" />
         </div>
         <div className="manager-message">
           <span className="eyebrow">A Word From Our Manager</span>
-          <h2>Your Comfort is Our Commitment</h2>
+          <h2 id="manager-heading">Your Comfort is Our Commitment</h2>
           <p>
             "Welcome to Viswa Hotel & Resorts. Our team is dedicated to making your stay exceptional. From our pristine rooms to our dedicated service, we strive to create a memorable experience for every guest. We look forward to hosting you and ensuring your time with us is nothing short of perfect."
           </p>

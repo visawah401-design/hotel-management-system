@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Admin.css';
+import { getApiUrl } from '../api';
 
 const toLocalDateTimeInput = (date) => {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -119,7 +120,7 @@ function Admin() {
 
     try {
       // Step 1: Create Razorpay Order
-      const orderRes = await fetch('http://localhost:5000/api/payments/create-order', {
+      const orderRes = await fetch(getApiUrl('/api/payments/create-order'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount })
@@ -142,7 +143,7 @@ function Admin() {
         handler: async (response) => {
           // Step 3: Verify Payment
           try {
-            const verifyRes = await fetch('http://localhost:5000/api/payments/verify-payment', {
+            const verifyRes = await fetch(getApiUrl('/api/payments/verify-payment'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

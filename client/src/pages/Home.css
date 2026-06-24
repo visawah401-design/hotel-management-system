@@ -11,6 +11,7 @@
 
 .home > section {
   width: 100%;
+  padding-inline: clamp(1rem, 2.5vw, 2rem);
 }
 
 .hero-section {

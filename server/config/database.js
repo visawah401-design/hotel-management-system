@@ -2,24 +2,21 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    // Both variables checked for maximum compatibility on Vercel/Railway
     const mongoURI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
     if (!mongoURI) {
-      throw new Error('MONGO_URI environment variable is not defined in .env or Railway variables');
+      process.env.USE_LOCAL_DB = 'true';
+      console.warn('⚠️ No MongoDB URI found. Falling back to local JSON storage.');
+      return null;
     }
 
     console.log('Connecting to MongoDB Atlas...');
-
-    // Prevents deprecation warnings in Mongoose 7
     mongoose.set('strictQuery', false);
 
-    // Connect without deprecated options (Optimized for Mongoose 7+)
     const conn = await mongoose.connect(mongoURI);
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
 
-    // Cloud/Railway Deployment health tracking listeners
     mongoose.connection.on('error', (err) => {
       console.error('❌ MongoDB runtime error:', err.message);
     });
@@ -30,9 +27,10 @@ const connectDB = async () => {
 
     return conn;
   } catch (error) {
-    console.error('❌ MongoDB connection failed:', error.message);
-    // Fail-fast for Railway to automatically restart the container
-    process.exit(1);
+    process.env.USE_LOCAL_DB = 'true';
+    console.warn('⚠️ MongoDB connection failed:', error.message);
+    console.warn('⚠️ Falling back to local JSON storage.');
+    return null;
   }
 };
 
