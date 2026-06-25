@@ -423,7 +423,7 @@ function Rooms({ isLoggedIn }) {
       }
 
       try {
-        const orderRes = await fetch(getApiUrl('/api/payments/create-order'), {
+        const orderRes = await fetch(getApiUrl('/payments/create-order'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount: amountToPay })
@@ -434,17 +434,12 @@ function Rooms({ isLoggedIn }) {
             return;
         }
 
-        const options = {
-          key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_T17mWs6lrO5aNR',
-          amount: Math.round(amountToPay * 100).toString(),
-          currency: orderData.currency || 'INR',
-          name: "Viswa Hotel & Resorts",
-          description: "Room Booking Reservation",
+        const options = {          amount: Math.round(amountToPay * 100).toString(),
           image: "/logo.png",
           order_id: orderData.id,
           handler: async function (response) {
             try {
-              const verifyRes = await fetch(getApiUrl('/api/payments/verify-payment'), {
+              const verifyRes = await fetch(getApiUrl('/payments/verify-payment'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

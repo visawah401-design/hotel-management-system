@@ -325,9 +325,15 @@ function Admin() {
         return;
       }
 
+      const razorpayKeyId = process.env.REACT_APP_RAZORPAY_KEY_ID;
+      if (!razorpayKeyId) {
+        alert('FATAL: Razorpay Key ID is not configured. Online payments are disabled.');
+        return;
+      }
+
       // Step 2: Open Razorpay Checkout
       const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_T17mWs6lrO5aNR', // Your Razorpay Key ID
+        key: razorpayKeyId,
         amount: Math.round(amount * 100), // Amount in paise
         currency: 'INR',
         name: 'Viswa Hotel & Resorts',
@@ -394,7 +400,7 @@ function Admin() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/api/bookings');
+      const response = await apiClient.get('/bookings');
       setBookings(response.data);
     } catch (error) {
       console.error("Failed to fetch bookings:", error);
@@ -407,7 +413,7 @@ function Admin() {
   const fetchStaff = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await apiClient.get('/api/staff', { headers: { 'x-auth-token': token } });
+      const res = await apiClient.get('/staff', { headers: { 'x-auth-token': token } });
       setStaffList(res.data);
     } catch (error) {
       console.error("Failed to fetch staff:", error);
@@ -463,7 +469,7 @@ function Admin() {
       const now = new Date();
       const currentTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       try {
-        const res = await apiClient.put(`/api/bookings/${id}/checkin`, { actualCheckIn: currentTime });
+        const res = await apiClient.put(`/bookings/${id}/checkin`, { actualCheckIn: currentTime });
         setBookings(bookings.map(b => b.id === id ? res.data : b));
         toast.success('✅ Guest checked-in successfully!');
       } catch (error) {
@@ -477,7 +483,7 @@ function Admin() {
       const now = new Date();
       const currentTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       try {
-        const res = await apiClient.put(`/api/bookings/${id}/checkout`, { actualCheckOut: currentTime });
+        const res = await apiClient.put(`/bookings/${id}/checkout`, { actualCheckOut: currentTime });
         setBookings(bookings.map(b => b.id === id ? res.data : b));
         toast.success('🚪 Guest checked-out successfully!');
       } catch (error) {
@@ -505,7 +511,7 @@ function Admin() {
       const now = new Date();
       const auditTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       try {
-        const res = await apiClient.put(`/api/bookings/${id}/cancel`, { reason: reason.trim(), auditTime });
+        const res = await apiClient.put(`/bookings/${id}/cancel`, { reason: reason.trim(), auditTime });
         setBookings(bookings.map(b => b.id === id ? res.data : b));
       } catch (error) {
         alert('Failed to archive booking.');
@@ -779,7 +785,7 @@ function Admin() {
   const updateStaffStatus = async (id, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await apiClient.put(`/api/staff/${id}/attendance`, 
+      const res = await apiClient.put(`/staff/${id}/attendance`, 
         { newStatus, todayStr },
         { headers: { 'x-auth-token': token } }
       );
@@ -827,7 +833,7 @@ function Admin() {
       const auditTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       try {
         const token = localStorage.getItem('token');
-        const res = await apiClient.delete(`/api/staff/${id}`, { headers: { 'x-auth-token': token }, data: { archivedAt: auditTime, archivedBy: 'Super Admin' } });
+        const res = await apiClient.delete(`/staff/${id}`, { headers: { 'x-auth-token': token }, data: { archivedAt: auditTime, archivedBy: 'Super Admin' } });
         setStaffList(staffList.map(staff => staff._id === id ? res.data : staff));
       } catch (error) {
         alert('Failed to archive staff member.');

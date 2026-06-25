@@ -7,6 +7,13 @@ dotenv.config();
 
 const app = express();
 
+// --- Production Security Check ---
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
+  process.exit(1);
+}
+// --- End Security Check ---
+
 // The URL of your frontend application deployed on Vercel
 const clientURL = process.env.CLIENT_URL;
 

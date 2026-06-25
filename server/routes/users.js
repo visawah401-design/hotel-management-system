@@ -41,36 +41,6 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Hardcoded admin login
-    if (email === 'admin' && password === 'admin123') {
-      const payload = { userId: 'admin-user-1', role: 'admin' };
-      const token = jwt.sign(payload, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '7d' });
-      return res.json({ 
-        token, 
-        user: { 
-          id: 'admin-user-1', 
-          name: 'Admin User', 
-          email: 'admin', 
-          role: 'admin' 
-        } 
-      });
-    }
-
-    // Hardcoded super admin login
-    if (email === 'sadmin' && password === '12345') {
-      const payload = { userId: 'sadmin-user-1', role: 'sadmin' };
-      const token = jwt.sign(payload, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '7d' });
-      return res.json({ 
-        token, 
-        user: { 
-          id: 'sadmin-user-1', 
-          name: 'Super Admin', 
-          email: 'sadmin', 
-          role: 'sadmin' 
-        } 
-      });
-    }
-
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
