@@ -7,19 +7,19 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = (process.env.CLIENT_URL || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+// The URL of your frontend application deployed on Vercel
+const clientURL = process.env.CLIENT_URL;
 
 // Middleware
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-      return callback(null, true);
+    // In development, origin can be undefined for server-side rendering or tools.
+    // For production, we must allow the Vercel frontend URL.
+    if (!origin || (clientURL && origin === clientURL)) {
+       callback(null, true);
+       return;
     }
-
-    return callback(new Error('Not allowed by CORS'));
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));

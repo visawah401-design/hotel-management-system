@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../api';
 
 function Login({ setIsLoggedIn, setUserRole }) {
   const [formData, setFormData] = useState({
@@ -59,7 +59,7 @@ function Login({ setIsLoggedIn, setUserRole }) {
     try {
       // Check for Guest Portal login first (by ID format)
       if (formData.email.toUpperCase().startsWith('VSW-')) {
-        const response = await axios.get(`/api/bookings/${formData.email.toUpperCase()}`);
+        const response = await apiClient.get(`/bookings/${formData.email.toUpperCase()}`);
         if (response.data) {
           localStorage.setItem('token', 'vip-guest-token');
           localStorage.setItem('userId', response.data.id);
@@ -72,7 +72,7 @@ function Login({ setIsLoggedIn, setUserRole }) {
       }
 
       // Standard User/Admin login
-      const response = await axios.post('/api/users/login', formData);
+      const response = await apiClient.post('/users/login', formData);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('userId', response.data.user.id);
       localStorage.setItem('role', response.data.user.role);

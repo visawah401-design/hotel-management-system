@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import './Rooms.css';
 import RoomCard from '../components/RoomCard';
 import toast from 'react-hot-toast';
+import { getApiUrl, apiClient } from '../api'; // Import the helper
 
 // Naye Room Cards jo UI mein automatically dikhenge
 const defaultRooms = [
@@ -184,10 +184,10 @@ function Rooms({ isLoggedIn }) {
   const fetchRooms = useCallback(async () => {
     try {
       // Fetch both rooms and bookings
-      const bookingsRes = await axios.get('/api/bookings/availability');
+      const bookingsRes = await apiClient.get('/bookings/availability');
       setBookings(bookingsRes.data);
 
-      const response = await axios.get('/api/rooms');
+      const response = await apiClient.get('/rooms');
       
       // Database se aane wale rooms me alag-alag photos set kar rahe hain (agar unme pehle se na ho)
       const dbRooms = response.data.map((room, index) => {
@@ -284,7 +284,7 @@ function Rooms({ isLoggedIn }) {
     };
 
     try {
-      const response = await axios.post('/api/bookings', newBooking);
+      const response = await apiClient.post('/bookings', newBooking);
       const savedBooking = response.data;
       showSuccessModal(savedBooking);
       setShowMultiBookingForm(false);
@@ -393,7 +393,7 @@ function Rooms({ isLoggedIn }) {
       };
 
       try {
-        const response = await axios.post('/api/bookings', newBookingData);
+        const response = await apiClient.post('/bookings', newBookingData);
         const savedBooking = response.data;
 
         toast.success(`Booking Confirmed! ID: ${savedBooking.id}`);
@@ -423,7 +423,7 @@ function Rooms({ isLoggedIn }) {
       }
 
       try {
-        const orderRes = await fetch('/api/payments/create-order', {
+        const orderRes = await fetch(getApiUrl('/api/payments/create-order'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount: amountToPay })
@@ -444,7 +444,7 @@ function Rooms({ isLoggedIn }) {
           order_id: orderData.id,
           handler: async function (response) {
             try {
-              const verifyRes = await fetch('/api/payments/verify-payment', {
+              const verifyRes = await fetch(getApiUrl('/api/payments/verify-payment'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

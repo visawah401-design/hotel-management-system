@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import './Admin.css';
-import { getApiUrl, apiClient } from '../api';
+import { apiClient } from '../api';
 
 const toLocalDateTimeInput = (date) => {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -318,12 +317,8 @@ function Admin() {
 
     try {
       // Step 1: Create Razorpay Order
-      const orderRes = await fetch(getApiUrl('/api/payments/create-order'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
-      });
-      const orderData = await orderRes.json();
+      const orderRes = await apiClient.post('/payments/create-order', { amount });
+      const orderData = orderRes.data;
 
       if (!orderData.id) {
         alert('Failed to create payment order. Please try again.');
@@ -340,24 +335,19 @@ function Admin() {
         order_id: orderData.id,
         handler: async (response) => {
           // Step 3: Verify Payment
-          try {
-            const verifyRes = await fetch(getApiUrl('/api/payments/verify-payment'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
+          try {            const verifyRes = await apiClient.post('/payments/verify-payment', {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature
-              })
-            });
-            const verifyData = await verifyRes.json();
+              });
+            const verifyData = verifyRes.data;
 
             if (verifyData.success) {
               // Step 4: Save Booking after Payment Success
               const finalBookingData = { ...bookingData, paymentStatus: 'Completed', razorpayPaymentId: response.razorpay_payment_id };
 
               // Save to DB via API
-              const savedBookingRes = await axios.post('/api/bookings', finalBookingData);
+              const savedBookingRes = await apiClient.post('/bookings', finalBookingData);
               const savedBooking = savedBookingRes.data;
 
               setBookings(prev => [savedBooking, ...prev]);
@@ -404,7 +394,7 @@ function Admin() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/bookings');
+      const response = await apiClient.get('/api/bookings');
       setBookings(response.data);
     } catch (error) {
       console.error("Failed to fetch bookings:", error);
@@ -417,7 +407,7 @@ function Admin() {
   const fetchStaff = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/staff', { headers: { 'x-auth-token': token } });
+      const res = await apiClient.get('/api/staff', { headers: { 'x-auth-token': token } });
       setStaffList(res.data);
     } catch (error) {
       console.error("Failed to fetch staff:", error);
@@ -515,7 +505,7 @@ function Admin() {
       const now = new Date();
       const auditTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       try {
-        const res = await axios.put(`/api/bookings/${id}/cancel`, { reason: reason.trim(), auditTime });
+        const res = await apiClient.put(`/api/bookings/${id}/cancel`, { reason: reason.trim(), auditTime });
         setBookings(bookings.map(b => b.id === id ? res.data : b));
       } catch (error) {
         alert('Failed to archive booking.');
@@ -576,7 +566,7 @@ function Admin() {
     }
 
     try {
-      const res = await axios.post('/api/bookings', newBooking);
+      const res = await apiClient.post('/bookings', newBooking);
       const savedBooking = res.data;
       setBookings([savedBooking, ...bookings]);
       setSelectedBooking(savedBooking);
@@ -669,7 +659,7 @@ function Admin() {
     }
 
     try {
-      const res = await axios.post('/api/bookings', newBooking);
+      const res = await apiClient.post('/bookings', newBooking);
       const savedBooking = res.data;
       setBookings([savedBooking, ...bookings]);
       setSelectedBooking(savedBooking);
@@ -773,7 +763,7 @@ function Admin() {
     }
 
     try {
-      const res = await axios.post('/api/bookings', newBooking);
+      const res = await apiClient.post('/bookings', newBooking);
       const savedBooking = res.data;
       setBookings([savedBooking, ...bookings]);
       setSelectedBooking(savedBooking);
@@ -789,7 +779,7 @@ function Admin() {
   const updateStaffStatus = async (id, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.put(`/api/staff/${id}/attendance`, 
+      const res = await apiClient.put(`/api/staff/${id}/attendance`, 
         { newStatus, todayStr },
         { headers: { 'x-auth-token': token } }
       );
@@ -837,7 +827,7 @@ function Admin() {
       const auditTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.delete(`/api/staff/${id}`, { headers: { 'x-auth-token': token }, data: { archivedAt: auditTime, archivedBy: 'Super Admin' } });
+        const res = await apiClient.delete(`/api/staff/${id}`, { headers: { 'x-auth-token': token }, data: { archivedAt: auditTime, archivedBy: 'Super Admin' } });
         setStaffList(staffList.map(staff => staff._id === id ? res.data : staff));
       } catch (error) {
         alert('Failed to archive staff member.');

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '../api';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -56,7 +56,7 @@ function Register() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('/api/users/register', formData);
+      await apiClient.post('/users/register', formData);
       alert('Registration successful! Please login.');
       navigate('/login');
     } catch (error) {

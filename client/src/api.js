@@ -1,27 +1,23 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+// Determine the base URL for the API.
+// In development, it will point to your local server, proxied by React.
+// In production, it will be the URL of your deployed Railway backend.
+const API_URL = process.env.NODE_ENV === 'production'
+  ? process.env.REACT_APP_API_URL
+  : 'http://localhost:5000'; // Assuming local server runs on 5000
 
-export const getApiUrl = (path) => {
-  if (!path) return API_BASE_URL || '/';
-  if (API_BASE_URL) {
-    return `${API_BASE_URL}${path}`;
-  }
-  return path;
-};
+if (process.env.NODE_ENV === 'production' && !process.env.REACT_APP_API_URL) {
+  console.error("FATAL: REACT_APP_API_URL is not defined in the production environment. API calls will fail.");
+}
 
-// Create axios instance with token in headers
+// Create a reusable helper function to get the full API URL
+export const getApiUrl = (path) => `${API_URL}${path}`;
+
+// Create a pre-configured axios instance
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL || '/'
+  baseURL: `${API_URL}/api`,
+  withCredentials: true, // Important for sending cookies with requests if you use them
 });
 
-// Add token to every request
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers['x-auth-token'] = token;
-  }
-  return config;
-});
-
-export default getApiUrl;
+export default apiClient;

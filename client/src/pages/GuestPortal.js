@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './GuestPortal.css';
-import axios from 'axios';
+import { apiClient } from '../api';
 
 function GuestPortal() {
   const [reservationId, setReservationId] = useState('');
@@ -34,7 +34,7 @@ function GuestPortal() {
   const fetchGuestData = useCallback(async (id) => {
     setLoading(true);
     try {
-      const response = await axios.get(`/api/bookings/${id}`);
+      const response = await apiClient.get(`/bookings/${id}`);
       setLoggedInGuest(response.data);
     } catch (error) {
       console.error("Failed to fetch guest data:", error);

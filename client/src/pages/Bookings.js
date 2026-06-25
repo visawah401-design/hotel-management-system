@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import './Bookings.css';
+import { apiClient } from '../api';
 
 function Bookings() {
   const [bookings, setBookings] = useState([]);
@@ -13,7 +13,7 @@ function Bookings() {
   const fetchBookings = async () => {
     try {
       const userId = localStorage.getItem('userId');
-      const response = await axios.get(`/api/bookings/user/${userId}`);
+      const response = await apiClient.get(`/bookings/user/${userId}`);
       setBookings(response.data);
       setLoading(false);
     } catch (error) {
@@ -25,7 +25,7 @@ function Bookings() {
   const handleCancel = async (bookingId) => {
     if (window.confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
       try {
-        await axios.put(`/api/bookings/${bookingId}/cancel`);
+        await apiClient.put(`/bookings/${bookingId}/cancel`);
         alert('Booking cancelled successfully');
         fetchBookings();
       } catch (error) {
@@ -37,7 +37,7 @@ function Bookings() {
   const handleCheckIn = async (bookingId) => {
     if (window.confirm('Are you sure you want to check-in now?')) {
       try {
-        await axios.put(`/api/bookings/${bookingId}/checkin`);
+        await apiClient.put(`/bookings/${bookingId}/checkin`);
         alert('Checked in successfully');
         fetchBookings();
       } catch (error) {
@@ -49,7 +49,7 @@ function Bookings() {
   const handleCheckOut = async (bookingId) => {
     if (window.confirm('Are you sure you want to check-out now?')) {
       try {
-        await axios.put(`/api/bookings/${bookingId}/checkout`);
+        await apiClient.put(`/bookings/${bookingId}/checkout`);
         alert('Checked out successfully');
         fetchBookings();
       } catch (error) {
