@@ -497,28 +497,23 @@ function Admin() {
   };
 
 
-  // Booking record ko preserve karke sirf Super Admin archive/cancel kar sakta hai
+  // Booking record ko permanently delete karne ka function
   const handleDeleteBooking = async (id) => {
     if(currentUserRole !== 'sadmin') {
-      alert('Only Super Admin can cancel/archive booking records.');
+      alert('Only Super Admin can delete booking records.');
       return;
     }
 
-    const reason = window.prompt('Enter cancellation/archive reason for this booking record:');
-    if(reason === null) return;
-    if(!reason.trim()) {
-      alert('Reason is required so the record remains auditable.');
-      return;
-    }
-
-    if(window.confirm('This will keep the booking record and mark it as Cancelled. Continue?')) {
-      const now = new Date();
-      const auditTime = now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if(window.confirm('This will permanently delete the booking record. Continue?')) {
       try {
-        const res = await axios.put(`/api/bookings/${id}/cancel`, { reason: reason.trim(), auditTime });
-        setBookings(bookings.map(b => b.id === id ? res.data : b));
+        const token = localStorage.getItem('token');
+        await axios.delete(getApiUrl(`/api/bookings/${id}`), {
+          headers: { 'x-auth-token': token }
+        });
+        setBookings(prev => prev.filter(b => b.id !== id));
+        toast.success('Booking deleted successfully!');
       } catch (error) {
-        alert('Failed to archive booking.');
+        toast.error('Failed to delete booking. ' + (error.response?.data?.message || error.message));
       }
     }
   };
@@ -1218,7 +1213,7 @@ function Admin() {
                           return <span style={{color: '#888', fontSize: '0.85rem'}}>Completed</span>;
                         }
                       })()}
-                      <button onClick={() => handleDeleteBooking(booking.id)} style={{display: currentUserRole === 'sadmin' ? 'inline-block' : 'none', background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', transition: '0.3s'}} title="Archive Booking">Archive</button>
+                      <button onClick={() => handleDeleteBooking(booking.id)} style={{display: currentUserRole === 'sadmin' ? 'inline-block' : 'none', background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', transition: '0.3s'}} title="Delete Booking">🗑️</button>
                     </td>
                   </tr>
                 )) : (
@@ -1403,7 +1398,7 @@ function Admin() {
                                  {booking.checkoutAlert ? '🔔 Reminder Sent' : '🔔 Send Alert'}
                               </button>
                             )}
-                            {currentUserRole === 'sadmin' && <button className="admin-btn-action" style={{background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c'}} onClick={() => handleDeleteBooking(booking.id)}>Archive</button>}
+                            {currentUserRole === 'sadmin' && <button className="admin-btn-action" style={{background: 'rgba(231, 76, 60, 0.1)', color: '#e74c3c', border: '1px solid #e74c3c'}} onClick={() => handleDeleteBooking(booking.id)} title="Delete Booking">🗑️</button>}
                           </>
                         );
                       })()}
